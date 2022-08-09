@@ -247,9 +247,25 @@ class CloudKitViewModel: ObservableObject {
     }
 
     func updateFruit(fruit: Fruit) async throws {
+        let newName = fruit.name + "!"
+
         let record = fruit.record
-        let name = record["name"] as? String ?? ""
-        record["name"] = name + "!"
+        record["name"] = newName
         try await saveRecord(record)
+
+        // Find the corresponding published fruit object.
+        let id = record.recordID
+        var pubFruit = fruits.first(where: { f in f.record.recordID == id })
+        if pubFruit == nil {
+            print("CloudKitViewModel.updateFruit: fruit not found")
+            return
+        }
+
+        // Update the published fruit object.
+        DispatchQueue.main.async {
+            pubFruit!.name = newName
+            print("CloudKitViewModel.updateFruit: updated fruit")
+            // TODO: This doesn't case the UI to update!
+        }
     }
 }
