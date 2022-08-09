@@ -1,6 +1,6 @@
 import CloudKit
 
-struct Fruit {
+struct Fruit: Hashable {
     let id: CKRecord.ID
     let name: String
 }

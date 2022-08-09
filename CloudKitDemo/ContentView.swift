@@ -38,6 +38,7 @@ struct ContentView: View {
                 try await vm.saveFruit(name: name)
                 print("added fruit \(name)")
                 name = ""
+                //try await vm.fetchRecords(recordType: "Fruits")
             } catch {
                 print("error adding fruit: \(error.localizedDescription)")
             }

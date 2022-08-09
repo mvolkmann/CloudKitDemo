@@ -103,9 +103,25 @@ class CloudKitViewModel: ObservableObject {
         
         return try await withCheckedThrowingContinuation { continuation in
 
-            let predicate = NSPredicate(value: true) // getting all records
+            //let predicate = NSPredicate(value: true) // getting all records
+
+            // This predicate gets only records where
+            // the value of the name field begins with "B".
+            // From https://developer.apple.com/documentation/cloudkit/ckquery,
+            // "For fields that contain string values, you can match the
+            // beginning portion of the string using the BEGINSWITH operator.
+            // You can’t use other string comparison operators,
+            // such as CONTAINS or ENDSWITH.
+            //let predicate = NSPredicate(format: "K beginswith %@", "name", "B")
+            let predicate = NSPredicate(format: "name beginswith %@", "B")
+
             let query = CKQuery(recordType: recordType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+
             let queryOperation = CKQueryOperation(query: query)
+
+            // The maximum number of records returned is 100.
+            //queryOperation.resultsLimit = 3 // to get less than the maximum
 
             // This is called once for each record.
             queryOperation.recordMatchedBlock = { recordId, result in
@@ -121,11 +137,21 @@ class CloudKitViewModel: ObservableObject {
             // This is called after the last record has been fetched.
             //queryOperation.queryResultBlock = { [weak self] result in
             queryOperation.queryResultBlock = { result in
-                // Update published properties on main thread.
-                DispatchQueue.main.async {
-                    //self?.fruits = fruits
-                    self.fruits = fruits
-                    continuation.resume()
+                switch result {
+                case .success(let cursor):
+                    // Use cursor to fetch additional records.
+                    // If will be nil if there are no more records to fetch.
+                    // TODO: How to you use the cursor to get more records?
+                    print("cursor = \(cursor)")
+
+                    // Update published properties on main thread.
+                    DispatchQueue.main.async {
+                        //self?.fruits = fruits
+                        self.fruits = fruits
+                        continuation.resume()
+                    }
+                case .failure(let error):
+                    continuation.resume(throwing: error)
                 }
             }
 
