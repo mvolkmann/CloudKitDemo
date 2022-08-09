@@ -23,8 +23,9 @@ struct ContentView: View {
             Button("Load Fruits", action: loadFruits)
 
             List {
-                ForEach(vm.fruits, id: \.id) { fruit in
+                ForEach(vm.fruits, id: \.record) { fruit in
                     Text(fruit.name)
+                        .onTapGesture { updateName(fruit: fruit) }
                 }
                 .onDelete(perform: deleteFruit)
             }
@@ -66,10 +67,15 @@ struct ContentView: View {
             }
         }
     }
-}
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    private func updateName(fruit: Fruit) {
+        Task {
+            do {
+                try await vm.updateFruit(fruit: fruit)
+                print("ContentView.updateName: updated name")
+            } catch {
+                print("ContentView.updateName: error \(error.localizedDescription)")
+            }
+        }
     }
 }

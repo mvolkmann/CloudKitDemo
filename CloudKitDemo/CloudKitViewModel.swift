@@ -70,7 +70,7 @@ class CloudKitViewModel: ObservableObject {
         let fruit = fruits[offset]
         return try await withCheckedThrowingContinuation { continuation in
             Task {
-                try await deleteRecord(id: fruit.id)
+                try await deleteRecord(fruit.record)
                 self.fruits.remove(at: offset)
                 print("CloudKitViewModel.deleteRecord: deleted = \(fruit.name)")
                 continuation.resume()
@@ -84,10 +84,10 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func deleteRecord(id: CKRecord.ID) async throws {
+    func deleteRecord(_ record: CKRecord) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             container.publicCloudDatabase.delete(
-                withRecordID: id
+                withRecordID: record.recordID
             ) { id, error in
                 if let error = error {
                     continuation.resume(throwing: error)
@@ -103,7 +103,7 @@ class CloudKitViewModel: ObservableObject {
         
         return try await withCheckedThrowingContinuation { continuation in
 
-            //let predicate = NSPredicate(value: true) // getting all records
+            let predicate = NSPredicate(value: true) // getting all records
 
             // This predicate gets only records where
             // the value of the name field begins with "B".
@@ -113,7 +113,7 @@ class CloudKitViewModel: ObservableObject {
             // You can’t use other string comparison operators,
             // such as CONTAINS or ENDSWITH.
             //let predicate = NSPredicate(format: "K beginswith %@", "name", "B")
-            let predicate = NSPredicate(format: "name beginswith %@", "B")
+            //let predicate = NSPredicate(format: "name beginswith %@", "B")
 
             let query = CKQuery(recordType: recordType, predicate: predicate)
             query.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
@@ -128,7 +128,7 @@ class CloudKitViewModel: ObservableObject {
                 switch result {
                 case .success(let record):
                     guard let name = record["name"] as? String else { return }
-                    fruits.append(Fruit(id: recordId, name: name))
+                    fruits.append(Fruit(record: record, name: name))
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
@@ -142,7 +142,7 @@ class CloudKitViewModel: ObservableObject {
                     // Use cursor to fetch additional records.
                     // If will be nil if there are no more records to fetch.
                     // TODO: How to you use the cursor to get more records?
-                    print("cursor = \(cursor)")
+                    print("cursor = \(cursor.debugDescription)")
 
                     // Update published properties on main thread.
                     DispatchQueue.main.async {
@@ -244,5 +244,12 @@ class CloudKitViewModel: ObservableObject {
         default:
             return "unknown"
         }
+    }
+
+    func updateFruit(fruit: Fruit) async throws {
+        let record = fruit.record
+        let name = record["name"] as? String ?? ""
+        record["name"] = name + "!"
+        try await saveRecord(record)
     }
 }
