@@ -45,13 +45,25 @@ struct ContentView: View {
     }
 
     private func deleteFruit(at offsets: IndexSet) {
-        for offset in offsets {
-            print("offset = \(offset)")
+        Task {
+            do {
+                for offset in offsets {
+                    try await vm.deleteFruit(offset: offset)
+                }
+            } catch {
+                print("ContentView.deleteFruit: error \(error.localizedDescription)")
+            }
         }
     }
 
     private func loadFruits() {
-        vm.fetchRecords(recordType: "Fruits")
+        Task {
+            do {
+                try await vm.fetchRecords(recordType: "Fruits")
+            } catch {
+                print("ContentView.loadFruits: error \(error.localizedDescription)")
+            }
+        }
     }
 }
 

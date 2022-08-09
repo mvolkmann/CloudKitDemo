@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1A79A04E28A309F000ED15E6 /* Fruit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A79A04D28A309F000ED15E6 /* Fruit.swift */; };
+		1A79A05328A310CB00ED15E6 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A79A05228A310CB00ED15E6 /* StringExtension.swift */; };
 		1AFDA1AE28A1CB1100A5E637 /* CloudKitDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */; };
 		1AFDA1B028A1CB1100A5E637 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFDA1AF28A1CB1100A5E637 /* ContentView.swift */; };
 		1AFDA1B228A1CB1200A5E637 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1AFDA1B128A1CB1200A5E637 /* Assets.xcassets */; };
@@ -17,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		1A79A04D28A309F000ED15E6 /* Fruit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fruit.swift; sourceTree = "<group>"; };
+		1A79A05228A310CB00ED15E6 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 		1AFDA1AA28A1CB1100A5E637 /* CloudKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitDemoApp.swift; sourceTree = "<group>"; };
 		1AFDA1AF28A1CB1100A5E637 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -37,6 +39,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1A79A05128A310BF00ED15E6 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				1A79A05228A310CB00ED15E6 /* StringExtension.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		1AFDA1A128A1CB1100A5E637 = {
 			isa = PBXGroup;
 			children = (
@@ -58,6 +68,7 @@
 			children = (
 				1AFDA1BB28A1CC2A00A5E637 /* CloudKitDemo.entitlements */,
 				1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */,
+				1A79A05128A310BF00ED15E6 /* Extensions */,
 				1AFDA1BC28A1D38E00A5E637 /* CloudKitViewModel.swift */,
 				1AFDA1AF28A1CB1100A5E637 /* ContentView.swift */,
 				1A79A04D28A309F000ED15E6 /* Fruit.swift */,
@@ -147,6 +158,7 @@
 			files = (
 				1A79A04E28A309F000ED15E6 /* Fruit.swift in Sources */,
 				1AFDA1B028A1CB1100A5E637 /* ContentView.swift in Sources */,
+				1A79A05328A310CB00ED15E6 /* StringExtension.swift in Sources */,
 				1AFDA1AE28A1CB1100A5E637 /* CloudKitDemoApp.swift in Sources */,
 				1AFDA1BD28A1D38E00A5E637 /* CloudKitViewModel.swift in Sources */,
 			);

@@ -66,34 +66,71 @@ class CloudKitViewModel: ObservableObject {
 
     // MARK: - Methods
 
-    func fetchRecords(recordType: String) {
+    func deleteFruit(offset: IndexSet.Element) async throws {
+        let fruit = fruits[offset]
+        return try await withCheckedThrowingContinuation { continuation in
+            Task {
+                try await deleteRecord(id: fruit.id)
+                self.fruits.remove(at: offset)
+                print("CloudKitViewModel.deleteRecord: deleted = \(fruit.name)")
+                continuation.resume()
+            }
+        }
+    }
+
+    func deleteFruits(offsets: IndexSet) async throws {
+        for offset in offsets {
+            try await deleteFruit(offset: offset)
+        }
+    }
+
+    func deleteRecord(id: CKRecord.ID) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            container.publicCloudDatabase.delete(
+                withRecordID: id
+            ) { id, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    func fetchRecords(recordType: String) async throws {
         var fruits: [Fruit] = []
+        
+        return try await withCheckedThrowingContinuation { continuation in
 
-        let predicate = NSPredicate(value: true) // getting all records
-        let query = CKQuery(recordType: recordType, predicate: predicate)
-        let queryOperation = CKQueryOperation(query: query)
+            let predicate = NSPredicate(value: true) // getting all records
+            let query = CKQuery(recordType: recordType, predicate: predicate)
+            let queryOperation = CKQueryOperation(query: query)
 
-        // This is called once for each record.
-        queryOperation.recordMatchedBlock = { recordId, result in
-            switch result {
-            case .success(let record):
-                guard let name = record["name"] as? String else { return }
-                fruits.append(Fruit(id: recordId, name: name))
-            case .failure(let error):
-                print("CloudKitViewModel.fetchRecords: error = \(error)")
+            // This is called once for each record.
+            queryOperation.recordMatchedBlock = { recordId, result in
+                switch result {
+                case .success(let record):
+                    guard let name = record["name"] as? String else { return }
+                    fruits.append(Fruit(id: recordId, name: name))
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
             }
-        }
 
-        // This is called after the last record has been fetched.
-        queryOperation.queryResultBlock = { [weak self] result in
-            print("fetchRecords: result = \(result)")
-            // Update published properties on main thread.
-            DispatchQueue.main.async {
-                self?.fruits = fruits
+            // This is called after the last record has been fetched.
+            //queryOperation.queryResultBlock = { [weak self] result in
+            queryOperation.queryResultBlock = { result in
+                // Update published properties on main thread.
+                DispatchQueue.main.async {
+                    //self?.fruits = fruits
+                    self.fruits = fruits
+                    continuation.resume()
+                }
             }
-        }
 
-        container.publicCloudDatabase.add(queryOperation)
+            container.publicCloudDatabase.add(queryOperation)
+        }
     }
 
     private func getUserName() {
