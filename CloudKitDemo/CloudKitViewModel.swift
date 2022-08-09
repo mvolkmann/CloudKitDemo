@@ -71,8 +71,7 @@ class CloudKitViewModel: ObservableObject {
         return try await withCheckedThrowingContinuation { continuation in
             Task {
                 try await deleteRecord(fruit.record)
-                self.fruits.remove(at: offset)
-                print("CloudKitViewModel.deleteRecord: deleted = \(fruit.name)")
+                self.fruits.remove(at: offset) // triggers UI update
                 continuation.resume()
             }
         }
