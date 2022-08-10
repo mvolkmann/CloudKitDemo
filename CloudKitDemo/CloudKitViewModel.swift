@@ -194,10 +194,13 @@ class CloudKitViewModel: ObservableObject {
         // The user must be signed into their iCloud account.
         return try await withCheckedThrowingContinuation { continuation in
             container.accountStatus { status, error in
-                self.status = status
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
+                    // Update published properties on main thread.
+                    DispatchQueue.main.async {
+                        self.status = status
+                    }
                     continuation.resume(returning: status == .available)
                 }
             }
