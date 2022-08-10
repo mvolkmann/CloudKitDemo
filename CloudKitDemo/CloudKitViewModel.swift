@@ -10,7 +10,6 @@ class CloudKitViewModel: ObservableObject {
     @Published var havePermission: Bool = false
     @Published var lastName: String = ""
     @Published var middleName: String = ""
-    @Published var isSignedIn: Bool = false
     @Published var status: CKAccountStatus = .couldNotDetermine
 
     let container: CKContainer
@@ -37,18 +36,16 @@ class CloudKitViewModel: ObservableObject {
         Task {
             do {
                 if try await isAvailable() {
-                    print("CloudKitViewModel: it is available!")
                     if try await requestPermission() {
-                        print("have permission")
                         getUserName()
                     } else {
-                        print("no permission")
+                        print("No permission to access CloudKit.")
                     }
                 } else {
-                    print("not available")
+                    print("CloudKit is not available.")
                 }
             } catch {
-                print("CloudKitViewModel: X error = \(error)")
+                print("CloudKitViewModel: error = \(error)")
             }
         }
     }
@@ -66,14 +63,30 @@ class CloudKitViewModel: ObservableObject {
 
     // MARK: - Methods
 
+    func addFruit(name: String) async throws {
+        let record = CKRecord(recordType: "Fruits")
+        record["name"] = name as CKRecordValue
+        let newFruit = Fruit(record: record, name: name)
+
+        // Update published properties on main thread.
+        //DispatchQueue.main.async {
+            self.fruits.append(newFruit)
+            self.fruits.sort { $0.name < $1.name }
+        //}
+
+        try await saveRecord(record)
+    }
+
     func deleteFruit(offset: IndexSet.Element) async throws {
-        let fruit = fruits[offset]
         return try await withCheckedThrowingContinuation { continuation in
-            Task {
-                try await deleteRecord(fruit.record)
-                self.fruits.remove(at: offset) // triggers UI update
-                continuation.resume()
-            }
+            // Update published properties on main thread.
+            //DispatchQueue.main.async {
+                let fruit = self.fruits.remove(at: offset)
+                Task {
+                    try await self.deleteRecord(fruit.record)
+                    continuation.resume()
+                }
+            //}
         }
     }
 
@@ -97,9 +110,7 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func fetchRecords(recordType: String) async throws {
-        var fruits: [Fruit] = []
-        
+    func fetchFruits(recordType: String) async throws {
         return try await withCheckedThrowingContinuation { continuation in
 
             let predicate = NSPredicate(value: true) // getting all records
@@ -127,7 +138,11 @@ class CloudKitViewModel: ObservableObject {
                 switch result {
                 case .success(let record):
                     guard let name = record["name"] as? String else { return }
-                    fruits.append(Fruit(record: record, name: name))
+
+                    // Update published properties on main thread.
+                    DispatchQueue.main.async {
+                        self.fruits.append(Fruit(record: record, name: name))
+                    }
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
@@ -141,14 +156,8 @@ class CloudKitViewModel: ObservableObject {
                     // Use cursor to fetch additional records.
                     // If will be nil if there are no more records to fetch.
                     // TODO: How to you use the cursor to get more records?
-                    print("cursor = \(cursor.debugDescription)")
-
-                    // Update published properties on main thread.
-                    DispatchQueue.main.async {
-                        //self?.fruits = fruits
-                        self.fruits = fruits
-                        continuation.resume()
-                    }
+                    print("CloudKitViewModel.fetchRecords: cursor = \(cursor.debugDescription)")
+                    continuation.resume()
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
@@ -185,6 +194,7 @@ class CloudKitViewModel: ObservableObject {
         // The user must be signed into their iCloud account.
         return try await withCheckedThrowingContinuation { continuation in
             container.accountStatus { status, error in
+                self.status = status
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -209,12 +219,6 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func saveFruit(name: String) async throws {
-        let record = CKRecord(recordType: "Fruits")
-        record["name"] = name as CKRecordValue
-        try await saveRecord(record)
-    }
-
     private func saveRecord(_ record: CKRecord) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             container.publicCloudDatabase.save(record) { record, error in
@@ -222,7 +226,6 @@ class CloudKitViewModel: ObservableObject {
                     continuation.resume(throwing: error)
                     return
                 }
-                print("saved record = \(record.debugDescription)")
                 continuation.resume()
             }
         }

@@ -3,18 +3,24 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var vm = CloudKitViewModel()
 
+    @State private var message = ""
     @State private var name = ""
 
     var body: some View {
         VStack {
-            Text("Signed in? \(vm.isSignedIn.description)")
-            Text("Status: \(vm.statusText)")
-            Text("Error: \(vm.error)")
-            Text("Name: \(vm.fullName)")
+            Text("iCloud Status: \(vm.statusText)")
+            if !vm.error.isEmpty {
+                Text("Error: \(vm.error)").foregroundColor(.red)
+            }
+            if !vm.fullName.isEmpty {
+                Text("iCloud User Name: \(vm.fullName)")
+            }
 
-            Text("Fruits")
             HStack {
-                TextField("Name", text: $name)
+                TextField("Fruit Name", text: $name)
+                    .padding(5)
+                    .border(.gray)
+                    .cornerRadius(5)
                 Button("Add Fruit", action: addFruit)
                     .disabled(name.isEmpty)
             }
@@ -22,13 +28,23 @@ struct ContentView: View {
 
             Button("Load Fruits", action: loadFruits)
 
-            List {
-                ForEach(vm.fruits, id: \.record) { fruit in
-                    Text(fruit.name)
-                        .onTapGesture { updateName(fruit: fruit) }
-                }
-                .onDelete(perform: deleteFruit)
+            if !message.isEmpty {
+                Text(message).foregroundColor(.red)
             }
+
+            if vm.fruits.isEmpty {
+                ProgressView()
+            } else {
+                List {
+                    ForEach(vm.fruits, id: \.record) { fruit in
+                        Text(fruit.name)
+                            .onTapGesture { updateName(fruit: fruit) }
+                    }
+                    .onDelete(perform: deleteFruit)
+                }
+            }
+
+            Spacer()
         }
         .onAppear(perform: loadFruits)
     }
@@ -36,10 +52,8 @@ struct ContentView: View {
     private func addFruit() {
         Task {
             do {
-                try await vm.saveFruit(name: name)
-                print("added fruit \(name)")
+                try await vm.addFruit(name: name)
                 name = ""
-                //try await vm.fetchRecords(recordType: "Fruits")
             } catch {
                 print("error adding fruit: \(error.localizedDescription)")
             }
@@ -53,7 +67,7 @@ struct ContentView: View {
                     try await vm.deleteFruit(offset: offset)
                 }
             } catch {
-                print("ContentView.deleteFruit: error \(error.localizedDescription)")
+                message = "error deleting fruit: \(error.localizedDescription)"
             }
         }
     }
@@ -61,9 +75,9 @@ struct ContentView: View {
     private func loadFruits() {
         Task {
             do {
-                try await vm.fetchRecords(recordType: "Fruits")
+                try await vm.fetchFruits(recordType: "Fruits")
             } catch {
-                print("ContentView.loadFruits: error \(error.localizedDescription)")
+                message = "error loading fruit: \(error.localizedDescription)"
             }
         }
     }
@@ -74,7 +88,7 @@ struct ContentView: View {
                 try await vm.updateFruit(fruit: fruit)
                 print("ContentView.updateName: updated name")
             } catch {
-                print("ContentView.updateName: error \(error.localizedDescription)")
+                message = "error updating fruit: \(error.localizedDescription)"
             }
         }
     }
