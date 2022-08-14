@@ -14,18 +14,6 @@ protocol CloudKitable {
 // This is a case-less enum.
 enum CloudKit {
 
-    static func accountStatus() async throws -> CKAccountStatus {
-        try await withCheckedThrowingContinuation { continuation in
-            CKContainer.default().accountStatus { status, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: status)
-                }
-            }
-        }
-    }
-
     static func requestPermission()
     async throws -> CKContainer.ApplicationPermissionStatus {
         try await withCheckedThrowingContinuation { continuation in
@@ -41,8 +29,20 @@ enum CloudKit {
         }
     }
 
-    static func statusText(_ status: CKAccountStatus) -> String {
-        switch status {
+    static func status() async throws -> CKAccountStatus {
+        try await withCheckedThrowingContinuation { continuation in
+            CKContainer.default().accountStatus { status, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: status)
+                }
+            }
+        }
+    }
+
+    static func statusText() async throws -> String {
+        switch try await status() {
         case .available:
             return "available"
         case .couldNotDetermine:
@@ -125,6 +125,18 @@ enum CloudKit {
     }
 
     private static func getContainer() -> CKContainer {
+        // When this is used, saves don't report an error,
+        // but the data doesn't get saved in the container.
+        // CKContainer.default()
+
+        // When this is used, saves don't report an error,
+        // but the data doesn't get saved in the container.
+        // CKContainer(identifier: "iCloud.r.mark.volkmann.gmail.com.CloudKitDemo")
+
+        // I discovered this container identifier by clicking the
+        // "CloudKit Console" button in "Signing & Capabilities".
+        // TODO: Why did it use this identifier instead of the one
+        // TODO: specified in Signing & Capabilities ... Containers?
         CKContainer(
             identifier: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
         )

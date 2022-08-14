@@ -9,36 +9,18 @@ class CloudKitViewModel: ObservableObject {
     @Published var havePermission: Bool = false
     @Published var status: CKAccountStatus = .couldNotDetermine
 
-    let container: CKContainer
-
     // MARK: - Initializer
 
     init() {
-        // When this is used, saves don't report an error,
-        // but the data doesn't get saved in the container.
-        //container = CKContainer.default()
-
-        // When this is used, saves don't report an error,
-        // but the data doesn't get saved in the container.
-        //container = CKContainer(identifier: "iCloud.r.mark.volkmann.gmail.com.CloudKitDemo")
-
-        // I discovered this container identifier by clicking the
-        // "CloudKit Console" button in "Signing & Capabilities".
-        // TODO: Why did it use this identifier instead of the one
-        // TODO: specified in Signing & Capabilities ... Containers?
-        container = CKContainer(
-            identifier: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
-        )
-
         Task {
             do {
-                let status = try await CloudKit.accountStatus()
-                DispatchQueue.main.async { self.status = status }
+                let status = try await CloudKit.status()
                 if status == .available {
                     let permission = try await CloudKit.requestPermission()
                     if permission == .granted {
                         let fullName = try await CloudKit.userIdentity()
                         DispatchQueue.main.async { self.fullName = fullName }
+                        try await retrieveFruits()
                     }
                 }
             } catch {
@@ -76,7 +58,7 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func retrieveFruits(recordType: CKRecord.RecordType) async throws {
+    private func retrieveFruits() async throws {
         let fruits = try await CloudKit.retrieve(
             usePublic: true,
             recordType: "Fruits",

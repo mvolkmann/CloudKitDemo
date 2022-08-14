@@ -5,10 +5,11 @@ struct ContentView: View {
 
     @State private var message = ""
     @State private var name = ""
+    @State private var statusText = ""
 
     var body: some View {
         VStack {
-            Text("iCloud Status: \(CloudKit.statusText(vm.status))")
+            Text("iCloud Status: \(statusText)")
 
             if !vm.fullName.isEmpty {
                 Text("iCloud User Name: \(vm.fullName)")
@@ -49,9 +50,9 @@ struct ContentView: View {
         }
         .task {
             do {
-                try await vm.retrieveFruits(recordType: "Fruits")
+                statusText = try await CloudKit.statusText()
             } catch {
-                message = "error retrieving fruits: \(error.localizedDescription)"
+                message = "error getting status text: \(error.localizedDescription)"
             }
         }
     }
