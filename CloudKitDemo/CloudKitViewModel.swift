@@ -54,16 +54,20 @@ class CloudKitViewModel: ObservableObject {
         record["name"] = name as CKRecordValue
         let newFruit = Fruit(record: record)
 
-        // Update published properties on main thread.
-        self.fruits.append(newFruit)
-        self.fruits.sort { $0.name < $1.name }
+        DispatchQueue.main.async {
+            self.fruits.append(newFruit)
+            self.fruits.sort { $0.name < $1.name }
+        }
 
         try await CloudKit.create(usePublic: true, item: newFruit)
     }
 
     func deleteFruit(offset: IndexSet.Element) async throws {
-        let fruit = self.fruits.remove(at: offset)
+        let fruit = fruits[offset]
         try await CloudKit.delete(usePublic: true, item: fruit)
+        DispatchQueue.main.async {
+            self.fruits.remove(at: offset)
+        }
     }
 
     func deleteFruits(offsets: IndexSet) async throws {
@@ -82,7 +86,6 @@ class CloudKitViewModel: ObservableObject {
     }
 
     func updateFruit(fruit: Fruit) async throws {
-        print("CloudKitViewModel.updateFruit: fruit =", fruit)
         try await CloudKit.update(usePublic: true, item: fruit)
 
         // Update the corresponding published fruit object.
