@@ -43,12 +43,12 @@ class CloudKitViewModel: ObservableObject {
             self.fruits.sort { $0.name < $1.name }
         }
 
-        try await CloudKit.create(usePublic: true, item: newFruit)
+        try await CloudKit.create(item: newFruit)
     }
 
     private func deleteFruit(offset: IndexSet.Element) async throws {
         let fruit = fruits[offset]
-        try await CloudKit.delete(usePublic: true, item: fruit)
+        try await CloudKit.delete(item: fruit)
         DispatchQueue.main.async {
             self.fruits.remove(at: offset)
         }
@@ -62,7 +62,6 @@ class CloudKitViewModel: ObservableObject {
 
     private func retrieveFruits() async throws {
         let fruits = try await CloudKit.retrieve(
-            usePublic: true,
             recordType: "Fruits",
             sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
         ) as [Fruit]
@@ -70,7 +69,7 @@ class CloudKitViewModel: ObservableObject {
     }
 
     func updateFruit(fruit: Fruit) async throws {
-        try await CloudKit.update(usePublic: true, item: fruit)
+        try await CloudKit.update(item: fruit)
 
         // Update the corresponding published fruit object.
         let id = fruit.record.recordID
