@@ -5,11 +5,9 @@ class CloudKitViewModel: ObservableObject {
     // MARK: - State
 
     @Published var error: String = ""
-    @Published var firstName: String = ""
     @Published var fruits: [Fruit] = []
+    @Published var fullName: String = ""
     @Published var havePermission: Bool = false
-    @Published var lastName: String = ""
-    @Published var middleName: String = ""
     @Published var status: CKAccountStatus = .couldNotDetermine
 
     let container: CKContainer
@@ -39,27 +37,15 @@ class CloudKitViewModel: ObservableObject {
                 DispatchQueue.main.async { self.status = status }
                 if status == .available {
                     let permission = try await CloudKit.requestPermission()
-                    if permission == .granted{
-                        getUserName()
-                    } else {
-                        print("No permission to access CloudKit.")
+                    if permission == .granted {
+                        let fullName = try await CloudKit.userIdentity()
+                        DispatchQueue.main.async { self.fullName = fullName }
                     }
-                } else {
-                    print("CloudKit is not available.")
                 }
             } catch {
                 print("CloudKitViewModel: error = \(error)")
             }
         }
-    }
-
-    // MARK: - Properties
-
-    var fullName: String {
-        var result = firstName
-        if !middleName.isEmpty { result += " " + middleName}
-        if !lastName.isEmpty { result += " " + lastName}
-        return result
     }
 
     // MARK: - Methods
@@ -165,29 +151,6 @@ class CloudKitViewModel: ObservableObject {
             }
 
             container.publicCloudDatabase.add(queryOperation)
-        }
-    }
-
-    private func getUserName() {
-        container.fetchUserRecordID { id, error in
-            guard let id = id else { return }
-
-            self.container.discoverUserIdentity(withUserRecordID: id) { [weak self] identity, error in
-                if let error = error {
-                    print("error = \(error.localizedDescription)")
-                    return
-                }
-
-                guard let components = identity?.nameComponents else { return }
-                //print("components = \(components)")
-
-                // Update published properties on main thread.
-                DispatchQueue.main.async {
-                    self?.firstName = components.givenName ?? ""
-                    self?.middleName = components.middleName ?? ""
-                    self?.lastName = components.familyName ?? ""
-                }
-            }
         }
     }
 

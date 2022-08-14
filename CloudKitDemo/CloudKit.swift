@@ -59,7 +59,7 @@ enum CloudKit {
         }
     }
 
-    private static func userIdentity() async throws -> String {
+    static func userIdentity() async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             Task {
                 do {
@@ -74,13 +74,17 @@ enum CloudKit {
     }
 
     private static func userIdentity(id: CKRecord.ID) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedThrowingContinuation { continuation in
             let container = CKContainer.default()
             container.discoverUserIdentity(withUserRecordID: id) { identity, error in
                 if let error = error {
                     continuation.resume(throwing: error)
-                } else if let name = identity?.nameComponents?.givenName {
-                    continuation.resume(returning: name)
+                } else if let components = identity?.nameComponents {
+                    let formatter = PersonNameComponentsFormatter()
+                    formatter.style = .long
+                    continuation.resume(
+                        returning: formatter.string(from: components)
+                    )
                 } else {
                     continuation.resume(
                         throwing: "failed to get CloudKit user identity"
