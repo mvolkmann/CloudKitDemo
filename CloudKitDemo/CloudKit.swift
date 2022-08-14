@@ -145,9 +145,9 @@ enum CloudKit {
     }
 
     // "R" in CRUD.
-    static func retreive<T:CloudKitable>(
+    static func retrieve<T:CloudKitable>(
         recordType: CKRecord.RecordType,
-        predicate: NSPredicate,
+        predicate: NSPredicate = NSPredicate(value: true), // gets all
         sortDescriptors: [NSSortDescriptor]? = nil,
         resultsLimit: Int? = nil
     ) async throws -> [T] {
@@ -163,8 +163,10 @@ enum CloudKit {
 
             // This callback is called for each record fetched.
             operation.recordMatchedBlock = { (recordID, result) in
+                print("CloudKit.retrieve: recordMatchedBlock called")
                 switch result {
                 case .success(let record):
+                    print("record = \(record)")
                     guard let item = T(record: record) else { return }
                     items.append(item)
                 case .failure:
@@ -174,11 +176,13 @@ enum CloudKit {
 
             // This callback is called after the last record is fetched.
             operation.queryResultBlock = { _ in
+                print("CloudKit.retrieve: queryResultBlock called")
                 continuation.resume(returning: items)
             }
 
             // This executes the operation.
             add(operation: operation)
+            print("CloudKit.retrieve: executed operation")
         }
     }
 

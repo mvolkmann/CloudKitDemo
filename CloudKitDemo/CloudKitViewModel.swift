@@ -53,7 +53,7 @@ class CloudKitViewModel: ObservableObject {
     func addFruit(name: String) async throws {
         let record = CKRecord(recordType: "Fruits")
         record["name"] = name as CKRecordValue
-        let newFruit = Fruit(record: record, name: name)
+        let newFruit = Fruit(record: record)
 
         // Update published properties on main thread.
         //DispatchQueue.main.async {
@@ -97,9 +97,18 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func fetchFruits(recordType: String) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
+    func fetchFruits(recordType: CKRecord.RecordType) async throws {
+        /*
+        print("CloudKitViewModel.fetchFruits: entered")
+        let fruits = try await CloudKit.retrieve(
+            recordType: "Fruits",
+            sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
+        ) as [Fruit]
+        print("CloudKitViewModel.fetchFruits: fruits = \(fruits)")
+        DispatchQueue.main.async { self.fruits = fruits }
+        */
 
+        return try await withCheckedThrowingContinuation { continuation in
             let predicate = NSPredicate(value: true) // getting all records
 
             // This predicate gets only records where
@@ -124,11 +133,9 @@ class CloudKitViewModel: ObservableObject {
             queryOperation.recordMatchedBlock = { recordId, result in
                 switch result {
                 case .success(let record):
-                    guard let name = record["name"] as? String else { return }
-
                     // Update published properties on main thread.
                     DispatchQueue.main.async {
-                        self.fruits.append(Fruit(record: record, name: name))
+                        self.fruits.append(Fruit(record: record))
                     }
                 case .failure(let error):
                     continuation.resume(throwing: error)
@@ -175,7 +182,7 @@ class CloudKitViewModel: ObservableObject {
 
         // Find the corresponding published fruit object.
         let id = record.recordID
-        var pubFruit = fruits.first(where: { f in f.record.recordID == id })
+        let pubFruit = fruits.first(where: { f in f.record.recordID == id })
         if pubFruit == nil {
             print("CloudKitViewModel.updateFruit: fruit not found")
             return
@@ -183,7 +190,7 @@ class CloudKitViewModel: ObservableObject {
 
         // Update the published fruit object.
         DispatchQueue.main.async {
-            pubFruit!.name = newName
+            pubFruit!.record["name"] = newName
             print("CloudKitViewModel.updateFruit: updated fruit")
             // TODO: This doesn't case the UI to update!
         }
