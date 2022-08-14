@@ -16,11 +16,7 @@ struct ContentView: View {
             }
 
             HStack {
-                TextField("Fruit Name", text: $fruitName)
-                    .padding(5)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5).stroke(.gray)
-                    )
+                MyTextField(label: "Fruit Name", text: $fruitName)
                 Button("Add Fruit", action: addFruit)
                     .disabled(fruitName.isEmpty)
             }
