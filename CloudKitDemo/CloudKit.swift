@@ -196,8 +196,11 @@ enum CloudKit {
     }
 
     // "U" in CRUD.
-    static func update<T:CloudKitable>(item: T) async throws {
-        try await create(item: item)
+    static func update<T:CloudKitable>(
+        usePublic: Bool = false,
+        item: T
+    ) async throws {
+        try await save(usePublic: usePublic, record: item.record)
     }
 
     // "D" in CRUD.

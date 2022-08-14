@@ -59,7 +59,6 @@ class CloudKitViewModel: ObservableObject {
         self.fruits.append(newFruit)
         self.fruits.sort { $0.name < $1.name }
 
-        //try await saveRecord(record)
         try await CloudKit.create(usePublic: true, item: newFruit)
     }
 
@@ -83,31 +82,17 @@ class CloudKitViewModel: ObservableObject {
         DispatchQueue.main.async { self.fruits = fruits }
     }
 
-    private func saveRecord(_ record: CKRecord) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            container.publicCloudDatabase.save(record) { record, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume()
-            }
-        }
-    }
-
     func updateFruit(fruit: Fruit) async throws {
+        print("CloudKitViewModel.updateFruit: fruit =", fruit)
         let newName = fruit.name + "!"
-
-        let record = fruit.record
-        record["name"] = newName
-        try await saveRecord(record)
+        fruit.record["name"] = newName
+        try await CloudKit.update(usePublic: true, item: fruit)
 
         // Find the corresponding published fruit object.
-        let id = record.recordID
+        let id = fruit.record.recordID
         let pubFruit = fruits.first(where: { f in f.record.recordID == id })
         if pubFruit == nil {
-            print("CloudKitViewModel.updateFruit: fruit not found")
-            return
+            throw "CloudKitViewModel.updateFruit: fruit not found"
         }
 
         // Update the published fruit object.
