@@ -6,7 +6,7 @@ struct Fruit: CloudKitable, Hashable {
         self.record = record
     }
 
-    let record: CKRecord
+    var record: CKRecord
 
     var name: String { record["name"] as? String ?? "" }
 }

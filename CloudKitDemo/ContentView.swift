@@ -38,7 +38,11 @@ struct ContentView: View {
                 List {
                     ForEach(vm.fruits, id: \.record) { fruit in
                         Text(fruit.name)
-                            .onTapGesture { updateName(fruit: fruit) }
+                            .onTapGesture {
+                                let name = fruit.record["name"] as? String ?? ""
+                                fruit.record["name"] = name + "!"
+                                updateFruit(fruit: fruit)
+                            }
                     }
                     .onDelete(perform: deleteFruit)
                 }
@@ -82,11 +86,10 @@ struct ContentView: View {
         }
     }
 
-    private func updateName(fruit: Fruit) {
+    private func updateFruit(fruit: Fruit) {
         Task {
             do {
                 try await vm.updateFruit(fruit: fruit)
-                print("ContentView.updateName: updated name")
             } catch {
                 message = "error updating fruit: \(error.localizedDescription)"
             }

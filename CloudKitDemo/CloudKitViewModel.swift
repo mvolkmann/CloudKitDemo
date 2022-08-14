@@ -84,22 +84,19 @@ class CloudKitViewModel: ObservableObject {
 
     func updateFruit(fruit: Fruit) async throws {
         print("CloudKitViewModel.updateFruit: fruit =", fruit)
-        let newName = fruit.name + "!"
-        fruit.record["name"] = newName
         try await CloudKit.update(usePublic: true, item: fruit)
 
-        // Find the corresponding published fruit object.
+        // Update the corresponding published fruit object.
         let id = fruit.record.recordID
-        let pubFruit = fruits.first(where: { f in f.record.recordID == id })
-        if pubFruit == nil {
+        let index = fruits.firstIndex(where: { f in f.record.recordID == id })
+        if let index = index {
+            // Update the published fruit object.
+            DispatchQueue.main.async { [weak self] in
+                self?.fruits[index].record = fruit.record
+            }
+        } else {
+            // This should never happen.
             throw "CloudKitViewModel.updateFruit: fruit not found"
-        }
-
-        // Update the published fruit object.
-        DispatchQueue.main.async {
-            pubFruit!.record["name"] = newName
-            print("CloudKitViewModel.updateFruit: updated fruit")
-            // TODO: This doesn't case the UI to update!
         }
     }
 }
