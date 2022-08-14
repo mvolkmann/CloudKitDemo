@@ -29,6 +29,7 @@ struct ContentView: View {
                     ForEach(vm.fruits, id: \.record) { fruit in
                         Text(fruit.name)
                             .onTapGesture {
+                                // TODO: Ignore double-taps!
                                 let name = fruit.record["name"] as? String ?? ""
                                 fruit.record["name"] = name + "!"
                                 updateFruit(fruit: fruit)
@@ -48,7 +49,7 @@ struct ContentView: View {
                 try await vm.addFruit(name: fruitName)
                 fruitName = ""
             } catch {
-                print("error adding fruit: \(error.localizedDescription)")
+                message = "error adding fruit: \(error.localizedDescription)"
             }
         }
     }
@@ -56,9 +57,7 @@ struct ContentView: View {
     private func deleteFruit(at offsets: IndexSet) {
         Task {
             do {
-                for offset in offsets {
-                    try await vm.deleteFruit(offset: offset)
-                }
+                try await vm.deleteFruits(offsets: offsets)
             } catch {
                 message = "error deleting fruit: \(error.localizedDescription)"
             }

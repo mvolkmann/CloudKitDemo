@@ -97,11 +97,11 @@
 			children = (
 				1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */,
 				1AFDA1B128A1CB1200A5E637 /* Assets.xcassets */,
+				1A1622B828A6C03200827D8D /* CloudKit.swift */,
 				1AFDA1BB28A1CC2A00A5E637 /* CloudKitDemo.entitlements */,
 				1A79A05128A310BF00ED15E6 /* Extensions */,
 				1A1622C428A948C700827D8D /* Models */,
 				1A1622C328A948AA00827D8D /* ViewModels */,
-				1A1622B828A6C03200827D8D /* CloudKit.swift */,
 				1A1622C028A9486200827D8D /* Views */,
 				1AFDA1B328A1CB1200A5E637 /* Preview Content */,
 			);
