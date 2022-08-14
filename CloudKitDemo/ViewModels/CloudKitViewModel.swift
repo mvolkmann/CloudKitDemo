@@ -12,15 +12,19 @@ class CloudKitViewModel: ObservableObject {
     // MARK: - Initializer
 
     init() {
+        cloudKit = CloudKit(
+            containerId: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
+        )
+
         Task {
             do {
-                let statusText = try await CloudKit.statusText()
+                let statusText = try await cloudKit.statusText()
                 DispatchQueue.main.async { self.statusText = statusText }
 
                 if statusText == "available" {
-                    let permission = try await CloudKit.requestPermission()
+                    let permission = try await cloudKit.requestPermission()
                     if permission == .granted {
-                        let userIdentity = try await CloudKit.userIdentity()
+                        let userIdentity = try await cloudKit.userIdentity()
                         DispatchQueue.main.async { self.userIdentity = userIdentity }
                         try await retrieveFruits()
                     }
@@ -30,6 +34,10 @@ class CloudKitViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Properties
+
+    var cloudKit: CloudKit!
 
     // MARK: - Methods
 
@@ -43,12 +51,12 @@ class CloudKitViewModel: ObservableObject {
             self.fruits.sort { $0.name < $1.name }
         }
 
-        try await CloudKit.create(item: newFruit)
+        try await cloudKit.create(item: newFruit)
     }
 
     private func deleteFruit(offset: IndexSet.Element) async throws {
         let fruit = fruits[offset]
-        try await CloudKit.delete(item: fruit)
+        try await cloudKit.delete(item: fruit)
         DispatchQueue.main.async {
             self.fruits.remove(at: offset)
         }
@@ -61,7 +69,7 @@ class CloudKitViewModel: ObservableObject {
     }
 
     private func retrieveFruits() async throws {
-        let fruits = try await CloudKit.retrieve(
+        let fruits = try await cloudKit.retrieve(
             recordType: "Fruits",
             sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
         ) as [Fruit]
@@ -69,7 +77,7 @@ class CloudKitViewModel: ObservableObject {
     }
 
     func updateFruit(fruit: Fruit) async throws {
-        try await CloudKit.update(item: fruit)
+        try await cloudKit.update(item: fruit)
 
         // Update the corresponding published fruit object.
         let id = fruit.record.recordID

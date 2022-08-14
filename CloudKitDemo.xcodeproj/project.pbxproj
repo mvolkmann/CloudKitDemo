@@ -21,6 +21,7 @@
 /* Begin PBXFileReference section */
 		1A1622B828A6C03200827D8D /* CloudKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKit.swift; sourceTree = "<group>"; };
 		1A1622C128A9487100827D8D /* MyTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyTextField.swift; sourceTree = "<group>"; };
+		1A1622C528A9745800827D8D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1A79A04D28A309F000ED15E6 /* Fruit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fruit.swift; sourceTree = "<group>"; };
 		1A79A05228A310CB00ED15E6 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 		1AFDA1AA28A1CB1100A5E637 /* CloudKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -95,6 +96,7 @@
 		1AFDA1AC28A1CB1100A5E637 /* CloudKitDemo */ = {
 			isa = PBXGroup;
 			children = (
+				1A1622C528A9745800827D8D /* Info.plist */,
 				1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */,
 				1AFDA1B128A1CB1200A5E637 /* Assets.xcassets */,
 				1A1622B828A6C03200827D8D /* CloudKit.swift */,
@@ -325,6 +327,7 @@
 				DEVELOPMENT_TEAM = 4BG3523GAZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CloudKitDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -355,6 +358,7 @@
 				DEVELOPMENT_TEAM = 4BG3523GAZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CloudKitDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

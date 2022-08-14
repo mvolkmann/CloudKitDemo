@@ -7,17 +7,34 @@ import CloudKit
 import UIKit
 
 protocol CloudKitable {
-    init?(record: CKRecord)
+    init(record: CKRecord)
     var record: CKRecord { get }
 }
 
-// This is a case-less enum.
-enum CloudKit {
+struct CloudKit {
+    var container: CKContainer!
+    var database: CKDatabase!
 
-    static func requestPermission()
-    async throws -> CKContainer.ApplicationPermissionStatus {
+    init(containerId: String, usePublic: Bool = false) {
+        // TODO: This doesn't result in pointing to the correct container.  Why?
+        // container = CKContainer.default()
+
+        // I discovered this container identifier by looking in CloudKitDemo.entitlements.
+        // "CloudKit Console" button in "Signing & Capabilities"
+        // under "Ubiquity Container Identifiers".
+        // TODO: Why did it use this identifier instead of the one
+        // TODO: specified in Signing & Capabilities ... Containers?
+
+        container = CKContainer(identifier: containerId)
+
+        database = usePublic ?
+          container.publicCloudDatabase :
+          container.privateCloudDatabase
+    }
+
+    func requestPermission() async throws -> CKContainer.ApplicationPermissionStatus {
         try await withCheckedThrowingContinuation { continuation in
-            CKContainer.default().requestApplicationPermission(
+            container.requestApplicationPermission(
                 [.userDiscoverability]
             ) { status, error in
                 if let error = error {
@@ -29,9 +46,9 @@ enum CloudKit {
         }
     }
 
-    static func status() async throws -> CKAccountStatus {
+    func status() async throws -> CKAccountStatus {
         try await withCheckedThrowingContinuation { continuation in
-            CKContainer.default().accountStatus { status, error in
+            container.accountStatus { status, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -41,7 +58,7 @@ enum CloudKit {
         }
     }
 
-    static func statusText() async throws -> String {
+    func statusText() async throws -> String {
         switch try await status() {
         case .available:
             return "available"
@@ -58,13 +75,12 @@ enum CloudKit {
         }
     }
 
-    static func userIdentity() async throws -> String {
+    func userIdentity() async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             Task {
                 do {
                     let id = try await userRecordID()
 
-                    let container = getContainer()
                     container.discoverUserIdentity(withUserRecordID: id) { identity, error in
                         if let error = error {
                             continuation.resume(throwing: error)
@@ -86,9 +102,8 @@ enum CloudKit {
         }
     }
 
-    static private func userRecordID() async throws -> CKRecord.ID {
+    private func userRecordID() async throws -> CKRecord.ID {
         try await withCheckedThrowingContinuation { continuation in
-            let container = getContainer()
             container.fetchUserRecordID { id, error in
                 if let error = error {
                     continuation.resume(throwing: error)
@@ -103,15 +118,7 @@ enum CloudKit {
         }
     }
 
-    // TODO: Add option to add in privateCloudDatabase.
-    static private func add(
-        usePublic: Bool = false,
-        operation: CKDatabaseOperation
-    ) {
-        getDb(usePublic).add(operation)
-    }
-
-    static private func createOperation(
+    private func createOperation(
         recordType: CKRecord.RecordType,
         predicate: NSPredicate,
         sortDescriptors: [NSSortDescriptor]? = nil,
@@ -124,33 +131,43 @@ enum CloudKit {
         return operation
     }
 
-    private static func getContainer() -> CKContainer {
-        // When this is used, saves don't report an error,
-        // but the data doesn't get saved in the container.
-        // CKContainer.default()
+    // See https://nemecek.be/blog/31/how-to-setup-cloudkit-subscription-to-get-notified-for-changes.
+    // This requires adding the "Background Modes" capability
+    // and checking "Remote notifications".
+    private func subscribe(
+        usePublic: Bool = false,
+        recordType: CKRecord.RecordType
+    ) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            let subscription = CKQuerySubscription(
+                recordType: recordType,
+                predicate: NSPredicate(value: true), // all records
+                options: [
+                    .firesOnRecordCreation,
+                    .firesOnRecordDeletion,
+                    .firesOnRecordUpdate
+                ]
+            )
 
-        // When this is used, saves don't report an error,
-        // but the data doesn't get saved in the container.
-        // CKContainer(identifier: "iCloud.r.mark.volkmann.gmail.com.CloudKitDemo")
+            let notification = CKSubscription.NotificationInfo()
+            notification.shouldSendContentAvailable = true
+            subscription.notificationInfo = notification
 
-        // I discovered this container identifier by clicking the
-        // "CloudKit Console" button in "Signing & Capabilities".
-        // TODO: Why did it use this identifier instead of the one
-        // TODO: specified in Signing & Capabilities ... Containers?
-        CKContainer(
-            identifier: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
-        )
-    }
-
-    private static func getDb(_ usePublic: Bool = false) -> CKDatabase {
-        let container = getContainer()
-        return usePublic ?
-          container.publicCloudDatabase :
-          container.privateCloudDatabase
+            database.save(subscription) { (subscription, error) in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let _ = subscription {
+                    print("successfully subscribed")
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: "no subscription created")
+                }
+            }
+        }
     }
 
     // "C" in CRUD.
-    static func create<T:CloudKitable>(
+    func create<T:CloudKitable>(
         usePublic: Bool = false,
         item: T
     ) async throws {
@@ -158,7 +175,7 @@ enum CloudKit {
     }
 
     // "R" in CRUD.
-    static func retrieve<T:CloudKitable>(
+    func retrieve<T:CloudKitable>(
         usePublic: Bool = false,
         recordType: CKRecord.RecordType,
         predicate: NSPredicate = NSPredicate(value: true), // gets all
@@ -203,12 +220,12 @@ enum CloudKit {
             }
 
             // This executes the operation.
-            add(usePublic: usePublic, operation: operation)
+            database.add(operation)
         }
     }
 
     // "U" in CRUD.
-    static func update<T:CloudKitable>(
+    func update<T:CloudKitable>(
         usePublic: Bool = false,
         item: T
     ) async throws {
@@ -216,13 +233,13 @@ enum CloudKit {
     }
 
     // "D" in CRUD.
-    static func delete<T:CloudKitable>(
+    func delete<T:CloudKitable>(
         usePublic: Bool = false,
         item: T
     ) async throws {
         // TODO: Why is "return" necessary on the next line?
         return try await withCheckedThrowingContinuation { continuation in
-            getDb(usePublic).delete(
+            database.delete(
                 withRecordID: item.record.recordID
             ) { _, error in
                 if let error = error {
@@ -234,13 +251,13 @@ enum CloudKit {
         }
     }
 
-    static private func save(
+    private func save(
         usePublic: Bool = false,
         record: CKRecord
     ) async throws {
         // TODO: Why is "return" necessary on the next line?
         return try await withCheckedThrowingContinuation { continuation in
-            getDb(usePublic).save(record) { _, error in
+            database.save(record) { _, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
