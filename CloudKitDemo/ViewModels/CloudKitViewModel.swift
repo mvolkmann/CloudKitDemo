@@ -46,7 +46,7 @@ class CloudKitViewModel: ObservableObject {
         try await CloudKit.create(usePublic: true, item: newFruit)
     }
 
-    func deleteFruit(offset: IndexSet.Element) async throws {
+    private func deleteFruit(offset: IndexSet.Element) async throws {
         let fruit = fruits[offset]
         try await CloudKit.delete(usePublic: true, item: fruit)
         DispatchQueue.main.async {

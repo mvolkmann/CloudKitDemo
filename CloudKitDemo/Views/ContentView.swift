@@ -5,6 +5,7 @@ struct ContentView: View {
 
     @State private var message = ""
     @State private var fruitName = ""
+    @State private var updating = false
 
     var body: some View {
         VStack {
@@ -29,7 +30,11 @@ struct ContentView: View {
                     ForEach(vm.fruits, id: \.record) { fruit in
                         Text(fruit.name)
                             .onTapGesture {
-                                // TODO: Ignore double-taps!
+                                // This ignores multiple taps.
+                                if updating { return }
+
+                                // TODO: Open a sheet that displays data in the
+                                // TODO: tapped fruit and allows it to be edited.
                                 let name = fruit.record["name"] as? String ?? ""
                                 fruit.record["name"] = name + "!"
                                 updateFruit(fruit: fruit)
@@ -48,6 +53,7 @@ struct ContentView: View {
             do {
                 try await vm.addFruit(name: fruitName)
                 fruitName = ""
+                message = ""
             } catch {
                 message = "error adding fruit: \(error.localizedDescription)"
             }
@@ -58,6 +64,7 @@ struct ContentView: View {
         Task {
             do {
                 try await vm.deleteFruits(offsets: offsets)
+                message = ""
             } catch {
                 message = "error deleting fruit: \(error.localizedDescription)"
             }
@@ -65,9 +72,12 @@ struct ContentView: View {
     }
 
     private func updateFruit(fruit: Fruit) {
+        updating = true
+        defer { updating = false }
         Task {
             do {
                 try await vm.updateFruit(fruit: fruit)
+                message = ""
             } catch {
                 message = "error updating fruit: \(error.localizedDescription)"
             }
