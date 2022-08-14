@@ -74,20 +74,6 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func deleteRecord(_ record: CKRecord) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            container.publicCloudDatabase.delete(
-                withRecordID: record.recordID
-            ) { id, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume()
-            }
-        }
-    }
-
     func fetchFruits(recordType: CKRecord.RecordType) async throws {
         let fruits = try await CloudKit.retrieve(
             usePublic: true,
