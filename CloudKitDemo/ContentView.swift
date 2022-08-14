@@ -26,8 +26,6 @@ struct ContentView: View {
             }
             .padding()
 
-            Button("Load Fruits", action: loadFruits)
-
             if !message.isEmpty {
                 Text(message).foregroundColor(.red)
             }
@@ -50,7 +48,13 @@ struct ContentView: View {
 
             Spacer()
         }
-        .onAppear(perform: loadFruits)
+        .task {
+            do {
+                try await vm.retrieveFruits(recordType: "Fruits")
+            } catch {
+                message = "error retrieving fruits: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func addFruit() {
@@ -72,16 +76,6 @@ struct ContentView: View {
                 }
             } catch {
                 message = "error deleting fruit: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func loadFruits() {
-        Task {
-            do {
-                try await vm.fetchFruits(recordType: "Fruits")
-            } catch {
-                message = "error loading fruit: \(error.localizedDescription)"
             }
         }
     }

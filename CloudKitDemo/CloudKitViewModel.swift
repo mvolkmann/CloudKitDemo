@@ -73,7 +73,7 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    func fetchFruits(recordType: CKRecord.RecordType) async throws {
+    func retrieveFruits(recordType: CKRecord.RecordType) async throws {
         let fruits = try await CloudKit.retrieve(
             usePublic: true,
             recordType: "Fruits",
