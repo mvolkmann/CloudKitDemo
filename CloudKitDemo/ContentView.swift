@@ -4,29 +4,26 @@ struct ContentView: View {
     @StateObject private var vm = CloudKitViewModel()
 
     @State private var message = ""
-    @State private var name = ""
+    @State private var fruitName = ""
     @State private var statusText = ""
 
     var body: some View {
         VStack {
             Text("iCloud Status: \(statusText)")
-
-            if !vm.fullName.isEmpty {
-                Text("iCloud User Name: \(vm.fullName)")
-            }
+            Text("iCloud User Name: \(vm.userIdentity)")
 
             if !message.isEmpty {
                 Text(message).foregroundColor(.red)
             }
 
             HStack {
-                TextField("Fruit Name", text: $name)
+                TextField("Fruit Name", text: $fruitName)
                     .padding(5)
                     .overlay(
                         RoundedRectangle(cornerRadius: 5).stroke(.gray)
                     )
                 Button("Add Fruit", action: addFruit)
-                    .disabled(name.isEmpty)
+                    .disabled(fruitName.isEmpty)
             }
             .padding()
 
@@ -60,8 +57,8 @@ struct ContentView: View {
     private func addFruit() {
         Task {
             do {
-                try await vm.addFruit(name: name)
-                name = ""
+                try await vm.addFruit(name: fruitName)
+                fruitName = ""
             } catch {
                 print("error adding fruit: \(error.localizedDescription)")
             }

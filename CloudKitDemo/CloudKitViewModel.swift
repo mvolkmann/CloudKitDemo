@@ -5,7 +5,7 @@ class CloudKitViewModel: ObservableObject {
     // MARK: - State
 
     @Published var fruits: [Fruit] = []
-    @Published var fullName: String = ""
+    @Published var userIdentity: String = ""
     @Published var havePermission: Bool = false
     @Published var status: CKAccountStatus = .couldNotDetermine
 
@@ -18,8 +18,8 @@ class CloudKitViewModel: ObservableObject {
                 if status == .available {
                     let permission = try await CloudKit.requestPermission()
                     if permission == .granted {
-                        let fullName = try await CloudKit.userIdentity()
-                        DispatchQueue.main.async { self.fullName = fullName }
+                        let userIdentity = try await CloudKit.userIdentity()
+                        DispatchQueue.main.async { self.userIdentity = userIdentity }
                         try await retrieveFruits()
                     }
                 }
