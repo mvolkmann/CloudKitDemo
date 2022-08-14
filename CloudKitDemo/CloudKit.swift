@@ -36,6 +36,19 @@ struct CloudKit {
           container.privateCloudDatabase
     }
 
+    private func createOperation(
+        recordType: CKRecord.RecordType,
+        predicate: NSPredicate,
+        sortDescriptors: [NSSortDescriptor]? = nil,
+        resultsLimit: Int? = nil
+    ) -> CKQueryOperation {
+        let query = CKQuery(recordType: recordType, predicate: predicate)
+        query.sortDescriptors = sortDescriptors
+        let operation = CKQueryOperation(query: query)
+        if let limit = resultsLimit { operation.resultsLimit = limit }
+        return operation
+    }
+
     func requestPermission() async throws -> CKContainer.ApplicationPermissionStatus {
         try await withCheckedThrowingContinuation { continuation in
             container.requestApplicationPermission(
@@ -45,6 +58,19 @@ struct CloudKit {
                     continuation.resume(throwing: error)
                 } else {
                     continuation.resume(returning: status)
+                }
+            }
+        }
+    }
+
+    private func save(record: CKRecord) async throws {
+        // TODO: Why is "return" necessary on the next line?
+        return try await withCheckedThrowingContinuation { continuation in
+            database.save(record) { _, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
                 }
             }
         }
@@ -76,6 +102,39 @@ struct CloudKit {
             return "temporarily unavailable"
         default:
             return "unknown"
+        }
+    }
+
+    // See https://nemecek.be/blog/31/how-to-setup-cloudkit-subscription-to-get-notified-for-changes.
+    // This requires adding the "Background Modes" capability
+    // and checking "Remote notifications".
+    // Supposedly subscriptions do not work in the Simulator.
+    func subscribe(recordType: CKRecord.RecordType) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            let subscription = CKQuerySubscription(
+                recordType: recordType,
+                predicate: NSPredicate(value: true), // all records
+                options: [
+                    .firesOnRecordCreation,
+                    .firesOnRecordDeletion,
+                    .firesOnRecordUpdate
+                ]
+            )
+
+            let info = CKSubscription.NotificationInfo()
+            info.shouldSendContentAvailable = true
+            info.alertBody = "" // if this isn't set, pushes aren't always sent
+            subscription.notificationInfo = info
+
+            database.save(subscription) { (subscription, error) in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let _ = subscription {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: "no subscription created")
+                }
+            }
         }
     }
 
@@ -117,52 +176,6 @@ struct CloudKit {
                     continuation.resume(
                         throwing: "failed to get CloudKit user record id"
                     )
-                }
-            }
-        }
-    }
-
-    private func createOperation(
-        recordType: CKRecord.RecordType,
-        predicate: NSPredicate,
-        sortDescriptors: [NSSortDescriptor]? = nil,
-        resultsLimit: Int? = nil
-    ) -> CKQueryOperation {
-        let query = CKQuery(recordType: recordType, predicate: predicate)
-        query.sortDescriptors = sortDescriptors
-        let operation = CKQueryOperation(query: query)
-        if let limit = resultsLimit { operation.resultsLimit = limit }
-        return operation
-    }
-
-    // See https://nemecek.be/blog/31/how-to-setup-cloudkit-subscription-to-get-notified-for-changes.
-    // This requires adding the "Background Modes" capability
-    // and checking "Remote notifications".
-    func subscribe(recordType: CKRecord.RecordType) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            let subscription = CKQuerySubscription(
-                recordType: recordType,
-                predicate: NSPredicate(value: true), // all records
-                options: [
-                    .firesOnRecordCreation,
-                    .firesOnRecordDeletion,
-                    .firesOnRecordUpdate
-                ]
-            )
-
-            let info = CKSubscription.NotificationInfo()
-            info.shouldSendContentAvailable = true
-            info.alertBody = "" // if this isn't set, pushes aren't always sent
-            subscription.notificationInfo = info
-
-            database.save(subscription) { (subscription, error) in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let _ = subscription {
-                    print("successfully subscribed")
-                    continuation.resume()
-                } else {
-                    continuation.resume(throwing: "no subscription created")
                 }
             }
         }
@@ -234,19 +247,6 @@ struct CloudKit {
             database.delete(
                 withRecordID: item.record.recordID
             ) { _, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
-    }
-
-    private func save(record: CKRecord) async throws {
-        // TODO: Why is "return" necessary on the next line?
-        return try await withCheckedThrowingContinuation { continuation in
-            database.save(record) { _, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
