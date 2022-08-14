@@ -1,6 +1,7 @@
 import CloudKit
 import UIKit
 
+// TODO: Do you need this?
 // To use this, register it in the main .swift file.
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 

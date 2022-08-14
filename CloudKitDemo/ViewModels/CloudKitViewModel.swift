@@ -31,6 +31,9 @@ class CloudKitViewModel: ObservableObject {
                         try await retrieveFruits()
                     }
                 }
+
+                try await cloudKit.requestNotifications()
+                try await cloudKit.subscribeToNotifications()
             } catch {
                 print("CloudKitViewModel: error = \(error)")
             }

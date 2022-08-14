@@ -16,8 +16,7 @@ protocol CloudKitable {
 }
 
 struct CloudKit {
-    var container: CKContainer!
-    var database: CKDatabase!
+    // MARK: - Initializer
 
     init(containerId: String, usePublic: Bool = false) {
         // TODO: This doesn't result in pointing to the correct container.  Why?
@@ -36,6 +35,13 @@ struct CloudKit {
           container.privateCloudDatabase
     }
 
+    // MARK: - Properties
+
+    var container: CKContainer!
+    var database: CKDatabase!
+
+    // MARK: - Non-CRUD Methods
+
     private func createOperation(
         recordType: CKRecord.RecordType,
         predicate: NSPredicate,
@@ -47,6 +53,55 @@ struct CloudKit {
         let operation = CKQueryOperation(query: query)
         if let limit = resultsLimit { operation.resultsLimit = limit }
         return operation
+    }
+
+    func requestNotifications() async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            let center = UNUserNotificationCenter.current()
+            let options: UNAuthorizationOptions = [.alert, .badge, .sound]
+            center.requestAuthorization(options: options) { success, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if success {
+                    DispatchQueue.main.async {
+                        UIApplication.shared.registerForRemoteNotifications()
+                        print("CloudKit.requestNotifications: success")
+                        continuation.resume()
+                    }
+                } else {
+                    continuation.resume(throwing: "notification authorization failed")
+                }
+            }
+        }
+    }
+
+    // Notifications are only delivered to real devices, not to the Simulator.
+    // They are only delivered if the app is not currently in the foreground.
+    func subscribeToNotifications() async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            let predicate = NSPredicate(value: true) // all records
+            let subscription = CKQuerySubscription(
+                recordType: "Fruits",
+                predicate: predicate,
+                subscriptionID: "fruit_added",
+                options: .firesOnRecordCreation
+            )
+
+            let info = CKSubscription.NotificationInfo()
+            info.title = "New fruit added"
+            info.alertBody = "Open the app to see it."
+            info.soundName = "default"
+            subscription.notificationInfo = info
+
+            database.save(subscription) { subscription, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    print("CloudKit.subscribeToNotifications: success")
+                    continuation.resume()
+                }
+            }
+        }
     }
 
     func requestPermission() async throws -> CKContainer.ApplicationPermissionStatus {
@@ -180,6 +235,8 @@ struct CloudKit {
             }
         }
     }
+
+    // MARK: - CRUD Methods
 
     // "C" in CRUD.
     func create<T:CloudKitable>(item: T) async throws {
