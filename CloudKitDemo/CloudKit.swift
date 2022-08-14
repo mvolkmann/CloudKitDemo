@@ -20,7 +20,6 @@ enum CloudKit {
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
-                    print("CloudKit.accoutStatus: status = \(status)")
                     continuation.resume(returning: status)
                 }
             }
@@ -64,8 +63,22 @@ enum CloudKit {
             Task {
                 do {
                     let id = try await userRecordID()
-                    let identity = try await userIdentity(id: id)
-                    continuation.resume(returning: identity)
+
+                    let container = getContainer()
+                    container.discoverUserIdentity(withUserRecordID: id) { identity, error in
+                        if let error = error {
+                            continuation.resume(throwing: error)
+                        } else if let components = identity?.nameComponents {
+                            let formatter = PersonNameComponentsFormatter()
+                            formatter.style = .long
+                            let identity = formatter.string(from: components)
+                            continuation.resume(returning: identity)
+                        } else {
+                            continuation.resume(
+                                throwing: "failed to get CloudKit user identity"
+                            )
+                        }
+                    }
                 } catch {
                     continuation.resume(throwing: error)
                 }
@@ -73,30 +86,9 @@ enum CloudKit {
         }
     }
 
-    private static func userIdentity(id: CKRecord.ID) async throws -> String {
-        return try await withCheckedThrowingContinuation { continuation in
-            let container = CKContainer.default()
-            container.discoverUserIdentity(withUserRecordID: id) { identity, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let components = identity?.nameComponents {
-                    let formatter = PersonNameComponentsFormatter()
-                    formatter.style = .long
-                    continuation.resume(
-                        returning: formatter.string(from: components)
-                    )
-                } else {
-                    continuation.resume(
-                        throwing: "failed to get CloudKit user identity"
-                    )
-                }
-            }
-        }
-    }
-
     static private func userRecordID() async throws -> CKRecord.ID {
         try await withCheckedThrowingContinuation { continuation in
-            let container = CKContainer.default()
+            let container = getContainer()
             container.fetchUserRecordID { id, error in
                 if let error = error {
                     continuation.resume(throwing: error)
@@ -109,6 +101,14 @@ enum CloudKit {
                 }
             }
         }
+    }
+
+    // TODO: Add option to add in privateCloudDatabase.
+    static private func add(
+        usePublic: Bool = false,
+        operation: CKDatabaseOperation
+    ) {
+        getDb(usePublic).add(operation)
     }
 
     static private func createOperation(
@@ -124,34 +124,38 @@ enum CloudKit {
         return operation
     }
 
-    // TODO: Add option to add in privateCloudDatabase.
-    static private func add(
-        usePublic: Bool = false,
-        operation: CKDatabaseOperation
-    ) {
-        getDb(usePublic).add(operation)
+    private static func getContainer() -> CKContainer {
+        CKContainer(
+            identifier: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
+        )
     }
 
     private static func getDb(_ usePublic: Bool = false) -> CKDatabase {
-        let container = CKContainer.default()
+        let container = getContainer()
         return usePublic ?
           container.publicCloudDatabase :
           container.privateCloudDatabase
     }
 
     // "C" in CRUD.
-    static func create<T:CloudKitable>(item: T) async throws {
-        try await save(record: item.record)
+    static func create<T:CloudKitable>(
+        usePublic: Bool = false,
+        item: T
+    ) async throws {
+        try await save(usePublic: usePublic, record: item.record)
     }
 
     // "R" in CRUD.
     static func retrieve<T:CloudKitable>(
+        usePublic: Bool = false,
         recordType: CKRecord.RecordType,
         predicate: NSPredicate = NSPredicate(value: true), // gets all
         sortDescriptors: [NSSortDescriptor]? = nil,
         resultsLimit: Int? = nil
     ) async throws -> [T] {
         try await withCheckedThrowingContinuation { continuation in
+            var items: [T] = []
+
             let operation = createOperation(
                 recordType: recordType,
                 predicate: predicate,
@@ -159,30 +163,35 @@ enum CloudKit {
                 resultsLimit: resultsLimit
             )
 
-            var items: [T] = []
-
             // This callback is called for each record fetched.
-            operation.recordMatchedBlock = { (recordID, result) in
-                print("CloudKit.retrieve: recordMatchedBlock called")
+            operation.recordMatchedBlock = { _, result in
                 switch result {
                 case .success(let record):
-                    print("record = \(record)")
                     guard let item = T(record: record) else { return }
                     items.append(item)
-                case .failure:
-                    break
+                case .failure(let error):
+                    continuation.resume(throwing: error)
                 }
             }
 
             // This callback is called after the last record is fetched.
-            operation.queryResultBlock = { _ in
-                print("CloudKit.retrieve: queryResultBlock called")
-                continuation.resume(returning: items)
+            operation.queryResultBlock = { result in
+                switch result {
+                case .success(let cursor):
+                    // Use cursor to fetch additional records.
+                    // If will be nil if there are no more records to fetch.
+                    // TODO: How to you use the cursor to get more records?
+                    if cursor != nil {
+                        print("CloudKitView.retrieve: cursor =", cursor.debugDescription)
+                    }
+                    continuation.resume(returning: items)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
             }
 
             // This executes the operation.
-            add(operation: operation)
-            print("CloudKit.retrieve: executed operation")
+            add(usePublic: usePublic, operation: operation)
         }
     }
 
