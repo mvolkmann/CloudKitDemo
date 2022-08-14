@@ -7,15 +7,17 @@ class CloudKitViewModel: ObservableObject {
     @Published var fruits: [Fruit] = []
     @Published var userIdentity: String = ""
     @Published var havePermission: Bool = false
-    @Published var status: CKAccountStatus = .couldNotDetermine
+    @Published var statusText: String = ""
 
     // MARK: - Initializer
 
     init() {
         Task {
             do {
-                let status = try await CloudKit.status()
-                if status == .available {
+                let statusText = try await CloudKit.statusText()
+                DispatchQueue.main.async { self.statusText = statusText }
+
+                if statusText == "available" {
                     let permission = try await CloudKit.requestPermission()
                     if permission == .granted {
                         let userIdentity = try await CloudKit.userIdentity()
