@@ -35,8 +35,11 @@ class CloudKitViewModel: ObservableObject {
 
         Task {
             do {
-                if try await isAvailable() {
-                    if try await requestPermission() {
+                let status = try await CloudKit.accountStatus()
+                DispatchQueue.main.async { self.status = status }
+                if status == .available {
+                    let permission = try await CloudKit.requestPermission()
+                    if permission == .granted{
                         getUserName()
                     } else {
                         print("No permission to access CloudKit.")
@@ -58,8 +61,6 @@ class CloudKitViewModel: ObservableObject {
         if !lastName.isEmpty { result += " " + lastName}
         return result
     }
-
-    var statusText: String { statusToString(status) }
 
     // MARK: - Methods
 
@@ -190,38 +191,6 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    private func isAvailable() async throws -> Bool {
-        // The user must be signed into their iCloud account.
-        return try await withCheckedThrowingContinuation { continuation in
-            container.accountStatus { status, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    // Update published properties on main thread.
-                    DispatchQueue.main.async {
-                        self.status = status
-                    }
-                    continuation.resume(returning: status == .available)
-                }
-            }
-        }
-    }
-
-    private func requestPermission() async throws -> Bool {
-        return try await withCheckedThrowingContinuation { continuation in
-            container.requestApplicationPermission(
-                [.userDiscoverability]
-            ) { status, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                continuation.resume(returning: status == .granted)
-            }
-        }
-    }
-
     private func saveRecord(_ record: CKRecord) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             container.publicCloudDatabase.save(record) { record, error in
@@ -231,23 +200,6 @@ class CloudKitViewModel: ObservableObject {
                 }
                 continuation.resume()
             }
-        }
-    }
-
-    private func statusToString(_ status: CKAccountStatus) -> String {
-        switch status {
-        case .available:
-            return "available"
-        case .couldNotDetermine:
-            return "could not determine"
-        case .noAccount:
-            return "no account"
-        case .restricted:
-            return "restricted"
-        case .temporarilyUnavailable:
-            return "temporarily unavailable"
-        default:
-            return "unknown"
         }
     }
 

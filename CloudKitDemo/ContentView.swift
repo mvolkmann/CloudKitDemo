@@ -8,7 +8,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack {
-            Text("iCloud Status: \(vm.statusText)")
+            Text("iCloud Status: \(CloudKit.statusText(vm.status))")
             if !vm.error.isEmpty {
                 Text("Error: \(vm.error)").foregroundColor(.red)
             }

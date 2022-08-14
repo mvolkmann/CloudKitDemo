@@ -11,7 +11,8 @@ protocol CloudKitable {
     var record: CKRecord { get }
 }
 
-class CloudKit {
+// This is a case-less enum.
+enum CloudKit {
 
     static func accountStatus() async throws -> CKAccountStatus {
         try await withCheckedThrowingContinuation { continuation in
@@ -19,13 +20,14 @@ class CloudKit {
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
+                    print("CloudKit.accoutStatus: status = \(status)")
                     continuation.resume(returning: status)
                 }
             }
         }
     }
 
-    private static func requestPermission()
+    static func requestPermission()
     async throws -> CKContainer.ApplicationPermissionStatus {
         try await withCheckedThrowingContinuation { continuation in
             CKContainer.default().requestApplicationPermission(
@@ -37,6 +39,23 @@ class CloudKit {
                     continuation.resume(returning: status)
                 }
             }
+        }
+    }
+
+    static func statusText(_ status: CKAccountStatus) -> String {
+        switch status {
+        case .available:
+            return "available"
+        case .couldNotDetermine:
+            return "could not determine"
+        case .noAccount:
+            return "no account"
+        case .restricted:
+            return "restricted"
+        case .temporarilyUnavailable:
+            return "temporarily unavailable"
+        default:
+            return "unknown"
         }
     }
 
