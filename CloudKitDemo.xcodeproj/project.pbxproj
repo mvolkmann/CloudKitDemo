@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1A1622B928A6C03200827D8D /* CloudKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1622B828A6C03200827D8D /* CloudKit.swift */; };
 		1A1622C228A9487100827D8D /* MyTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1622C128A9487100827D8D /* MyTextField.swift */; };
+		1A1622C728A98F9B00827D8D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1622C628A98F9B00827D8D /* AppDelegate.swift */; };
 		1A79A04E28A309F000ED15E6 /* Fruit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A79A04D28A309F000ED15E6 /* Fruit.swift */; };
 		1A79A05328A310CB00ED15E6 /* StringExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A79A05228A310CB00ED15E6 /* StringExtension.swift */; };
 		1AFDA1AE28A1CB1100A5E637 /* CloudKitDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */; };
@@ -22,6 +23,7 @@
 		1A1622B828A6C03200827D8D /* CloudKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKit.swift; sourceTree = "<group>"; };
 		1A1622C128A9487100827D8D /* MyTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyTextField.swift; sourceTree = "<group>"; };
 		1A1622C528A9745800827D8D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1A1622C628A98F9B00827D8D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A79A04D28A309F000ED15E6 /* Fruit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fruit.swift; sourceTree = "<group>"; };
 		1A79A05228A310CB00ED15E6 /* StringExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtension.swift; sourceTree = "<group>"; };
 		1AFDA1AA28A1CB1100A5E637 /* CloudKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,6 +102,7 @@
 				1AFDA1AD28A1CB1100A5E637 /* CloudKitDemoApp.swift */,
 				1AFDA1B128A1CB1200A5E637 /* Assets.xcassets */,
 				1A1622B828A6C03200827D8D /* CloudKit.swift */,
+				1A1622C628A98F9B00827D8D /* AppDelegate.swift */,
 				1AFDA1BB28A1CC2A00A5E637 /* CloudKitDemo.entitlements */,
 				1A79A05128A310BF00ED15E6 /* Extensions */,
 				1A1622C428A948C700827D8D /* Models */,
@@ -188,6 +191,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A1622C728A98F9B00827D8D /* AppDelegate.swift in Sources */,
 				1A79A04E28A309F000ED15E6 /* Fruit.swift in Sources */,
 				1A1622C228A9487100827D8D /* MyTextField.swift in Sources */,
 				1A1622B928A6C03200827D8D /* CloudKit.swift in Sources */,

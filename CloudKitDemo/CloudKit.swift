@@ -7,7 +7,11 @@ import CloudKit
 import UIKit
 
 protocol CloudKitable {
-    init(record: CKRecord)
+    // This must be an optional initializer
+    // due to this line in the retreive method:
+    // guard let item = T(record: record) else { return }
+    init?(record: CKRecord)
+
     var record: CKRecord { get }
 }
 
@@ -134,10 +138,7 @@ struct CloudKit {
     // See https://nemecek.be/blog/31/how-to-setup-cloudkit-subscription-to-get-notified-for-changes.
     // This requires adding the "Background Modes" capability
     // and checking "Remote notifications".
-    private func subscribe(
-        usePublic: Bool = false,
-        recordType: CKRecord.RecordType
-    ) async throws {
+    func subscribe(recordType: CKRecord.RecordType) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             let subscription = CKQuerySubscription(
                 recordType: recordType,
@@ -149,9 +150,10 @@ struct CloudKit {
                 ]
             )
 
-            let notification = CKSubscription.NotificationInfo()
-            notification.shouldSendContentAvailable = true
-            subscription.notificationInfo = notification
+            let info = CKSubscription.NotificationInfo()
+            info.shouldSendContentAvailable = true
+            info.alertBody = "" // if this isn't set, pushes aren't always sent
+            subscription.notificationInfo = info
 
             database.save(subscription) { (subscription, error) in
                 if let error = error {
@@ -167,16 +169,12 @@ struct CloudKit {
     }
 
     // "C" in CRUD.
-    func create<T:CloudKitable>(
-        usePublic: Bool = false,
-        item: T
-    ) async throws {
-        try await save(usePublic: usePublic, record: item.record)
+    func create<T:CloudKitable>(item: T) async throws {
+        try await save(record: item.record)
     }
 
     // "R" in CRUD.
     func retrieve<T:CloudKitable>(
-        usePublic: Bool = false,
         recordType: CKRecord.RecordType,
         predicate: NSPredicate = NSPredicate(value: true), // gets all
         sortDescriptors: [NSSortDescriptor]? = nil,
@@ -225,18 +223,12 @@ struct CloudKit {
     }
 
     // "U" in CRUD.
-    func update<T:CloudKitable>(
-        usePublic: Bool = false,
-        item: T
-    ) async throws {
-        try await save(usePublic: usePublic, record: item.record)
+    func update<T:CloudKitable>(item: T) async throws {
+        try await save(record: item.record)
     }
 
     // "D" in CRUD.
-    func delete<T:CloudKitable>(
-        usePublic: Bool = false,
-        item: T
-    ) async throws {
+    func delete<T:CloudKitable>(item: T) async throws {
         // TODO: Why is "return" necessary on the next line?
         return try await withCheckedThrowingContinuation { continuation in
             database.delete(
@@ -251,10 +243,7 @@ struct CloudKit {
         }
     }
 
-    private func save(
-        usePublic: Bool = false,
-        record: CKRecord
-    ) async throws {
+    private func save(record: CKRecord) async throws {
         // TODO: Why is "return" necessary on the next line?
         return try await withCheckedThrowingContinuation { continuation in
             database.save(record) { _, error in

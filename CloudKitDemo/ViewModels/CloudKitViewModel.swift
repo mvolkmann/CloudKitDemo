@@ -26,6 +26,8 @@ class CloudKitViewModel: ObservableObject {
                     if permission == .granted {
                         let userIdentity = try await cloudKit.userIdentity()
                         DispatchQueue.main.async { self.userIdentity = userIdentity }
+
+                        try await cloudKit.subscribe(recordType: "Fruits")
                         try await retrieveFruits()
                     }
                 }
