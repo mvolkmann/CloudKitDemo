@@ -9,26 +9,25 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Text("iCloud Status: \(CloudKit.statusText(vm.status))")
-            if !vm.error.isEmpty {
-                Text("Error: \(vm.error)").foregroundColor(.red)
-            }
+
             if !vm.fullName.isEmpty {
                 Text("iCloud User Name: \(vm.fullName)")
+            }
+
+            if !message.isEmpty {
+                Text(message).foregroundColor(.red)
             }
 
             HStack {
                 TextField("Fruit Name", text: $name)
                     .padding(5)
-                    .border(.gray)
-                    .cornerRadius(5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5).stroke(.gray)
+                    )
                 Button("Add Fruit", action: addFruit)
                     .disabled(name.isEmpty)
             }
             .padding()
-
-            if !message.isEmpty {
-                Text(message).foregroundColor(.red)
-            }
 
             if vm.fruits.isEmpty {
                 ProgressView()

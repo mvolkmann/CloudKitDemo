@@ -4,7 +4,6 @@ import SwiftUI
 class CloudKitViewModel: ObservableObject {
     // MARK: - State
 
-    @Published var error: String = ""
     @Published var fruits: [Fruit] = []
     @Published var fullName: String = ""
     @Published var havePermission: Bool = false
