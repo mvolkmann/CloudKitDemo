@@ -27,13 +27,13 @@ class CloudKitViewModel: ObservableObject {
                         let userIdentity = try await cloudKit.userIdentity()
                         DispatchQueue.main.async { self.userIdentity = userIdentity }
 
+                        try await cloudKit.requestNotifications()
+                        try await cloudKit.subscribeToNotifications()
+
                         // try await cloudKit.subscribe(recordType: "Fruits")
                         try await retrieveFruits()
                     }
                 }
-
-                try await cloudKit.requestNotifications()
-                try await cloudKit.subscribeToNotifications()
             } catch {
                 print("CloudKitViewModel: error = \(error)")
             }

@@ -93,6 +93,8 @@ struct CloudKit {
             info.soundName = "default"
             subscription.notificationInfo = info
 
+            // THIS DOES NOT WORK!!!
+
             database.save(subscription) { subscription, error in
                 if let error = error {
                     continuation.resume(throwing: error)
