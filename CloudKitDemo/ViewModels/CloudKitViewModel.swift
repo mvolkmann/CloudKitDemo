@@ -74,7 +74,7 @@ class CloudKitViewModel: ObservableObject {
         }
     }
 
-    private func retrieveFruits() async throws {
+    func retrieveFruits() async throws {
         let fruits = try await cloudKit.retrieve(
             recordType: "Fruits",
             sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]

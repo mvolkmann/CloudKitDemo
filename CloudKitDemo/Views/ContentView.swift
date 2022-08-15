@@ -45,6 +45,8 @@ struct ContentView: View {
                     }
                     .onDelete(perform: deleteFruit)
                 }
+                //.refreshable(action: refresh)
+                .refreshable { refresh() }
             }
 
             Spacer()
@@ -70,6 +72,16 @@ struct ContentView: View {
                 message = ""
             } catch {
                 message = "error deleting fruit: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func refresh() {
+        Task {
+            do {
+                try await vm.retrieveFruits()
+            } catch {
+                message = "error refreshing fruits: \(error.localizedDescription)"
             }
         }
     }
