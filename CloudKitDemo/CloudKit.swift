@@ -250,47 +250,29 @@ struct CloudKit {
         recordType: CKRecord.RecordType,
         predicate: NSPredicate = NSPredicate(value: true), // gets all
         sortDescriptors: [NSSortDescriptor]? = nil,
-        resultsLimit: Int? = nil
+        resultsLimit: Int = CKQueryOperation.maximumResults
     ) async throws -> [T] {
-        try await withCheckedThrowingContinuation { continuation in
-            var items: [T] = []
+        let query = CKQuery(recordType: recordType, predicate: predicate)
+        query.sortDescriptors = sortDescriptors
 
-            let operation = createOperation(
-                recordType: recordType,
-                predicate: predicate,
-                sortDescriptors: sortDescriptors,
-                resultsLimit: resultsLimit
-            )
+        // The 2nd tuple element is the cursor
+        // which isn't being used here.
+        let (results, _) = try await database.records(
+            matching: query,
+            resultsLimit: resultsLimit
+        )
 
-            // This callback is called for each record fetched.
-            operation.recordMatchedBlock = { _, result in
-                switch result {
-                case .success(let record):
-                    guard let item = T(record: record) else { return }
-                    items.append(item)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
+        // Convert the results array into an array of T items.
+        return try results.map { item in
+            // The 1st tuple element is the record id
+            // which isn't being used here.
+            let (_, result) = item
+            switch result {
+            case .success(let record):
+                return T(record: record)!
+            case .failure(let error):
+                throw error
             }
-
-            // This callback is called after the last record is fetched.
-            operation.queryResultBlock = { result in
-                switch result {
-                case .success(let cursor):
-                    // Use cursor to fetch additional records.
-                    // If will be nil if there are no more records to fetch.
-                    // TODO: How to you use the cursor to get more records?
-                    if cursor != nil {
-                        print("CloudKitView.retrieve: cursor =", cursor.debugDescription)
-                    }
-                    continuation.resume(returning: items)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            // This executes the operation.
-            database.add(operation)
         }
     }
 
