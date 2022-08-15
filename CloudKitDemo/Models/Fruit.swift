@@ -8,5 +8,8 @@ struct Fruit: CloudKitable, Hashable {
 
     var record: CKRecord
 
-    var name: String { record["name"] as? String ?? "" }
+    var name: String {
+        //record["name"] as? String ?? ""
+        record.value(forKey: "name") as? String ?? ""
+    }
 }

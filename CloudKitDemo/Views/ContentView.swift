@@ -35,8 +35,11 @@ struct ContentView: View {
 
                                 // TODO: Open a sheet that displays data in the
                                 // TODO: tapped fruit and allows it to be edited.
-                                let name = fruit.record["name"] as? String ?? ""
-                                fruit.record["name"] = name + "!"
+                                let record = fruit.record
+                                //let name = record["name"] as? String ?? ""
+                                let name = record.value(forKey: "name") as? String ?? ""
+                                //fruit.record["name"] = name + "!"
+                                record.setValue(name + "!", forKey: "name")
                                 updateFruit(fruit: fruit)
                             }
                     }

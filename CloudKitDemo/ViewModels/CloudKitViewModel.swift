@@ -48,7 +48,8 @@ class CloudKitViewModel: ObservableObject {
 
     func addFruit(name: String) async throws {
         let record = CKRecord(recordType: "Fruits")
-        record["name"] = name as CKRecordValue
+        //record["name"] = name as CKRecordValue
+        record.setValue(name as CKRecordValue, forKey: "name")
         let newFruit = Fruit(record: record)
 
         DispatchQueue.main.async {
