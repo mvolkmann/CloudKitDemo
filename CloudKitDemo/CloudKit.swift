@@ -65,7 +65,6 @@ struct CloudKit {
                 } else if success {
                     DispatchQueue.main.async {
                         UIApplication.shared.registerForRemoteNotifications()
-                        print("CloudKit.requestNotifications: success")
                         continuation.resume()
                     }
                 } else {
@@ -103,7 +102,6 @@ struct CloudKit {
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
-                    print("CloudKit.subscribeToNotifications: success")
                     continuation.resume()
                 }
             }
