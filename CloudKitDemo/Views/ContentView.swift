@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var vm = CloudKitViewModel()
+    @StateObject private var vm = CloudKitViewModel.shared
 
     @State private var message = ""
     @State private var fruitName = ""

@@ -11,11 +11,9 @@ class CloudKitViewModel: ObservableObject {
 
     // MARK: - Initializer
 
-    init() {
-        cloudKit = CloudKit(
-            containerId: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
-        )
-
+    // This class is a singleton.
+    private init() {
+        cloudKit = CloudKit(containerId: containerId)
         Task {
             do {
                 let statusText = try await cloudKit.statusText()
@@ -42,7 +40,9 @@ class CloudKitViewModel: ObservableObject {
 
     // MARK: - Properties
 
-    var cloudKit: CloudKit!
+    static var shared = CloudKitViewModel()
+
+    private var cloudKit: CloudKit!
 
     // MARK: - Methods
 
@@ -50,6 +50,9 @@ class CloudKitViewModel: ObservableObject {
         let record = CKRecord(recordType: "Fruits")
         //record["name"] = name as CKRecordValue
         record.setValue(name as CKRecordValue, forKey: "name")
+        // Also see record.setValuesForKeys([
+        //    "name": name, "anotherKey": anotherValue, ...
+        // ])
         let newFruit = Fruit(record: record)
 
         DispatchQueue.main.async {

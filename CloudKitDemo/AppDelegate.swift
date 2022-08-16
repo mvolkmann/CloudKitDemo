@@ -30,25 +30,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     func application(
         _ application: UIApplication,
-        didReceiveRemoteNotification userInfo: [AnyHashable : Any]
-        //fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+        didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        /*
-        if let _ = CKNotification(fromRemoteNotificationDictionary: userInfo) {
-            print("CloudKit database changed")
-            /*
-            NotificationCenter.default.post(
-                name: .cloudKitChanged,
-                object: nil
-            )
-            */
-            completionHandler(.newData)
-        }
-        */
-        let dict = userInfo as! [String: NSObject]
-        let notification = CKNotification(fromRemoteNotificationDictionary: dict)
-        if let id = notification?.subscriptionID {
-            print("AppDelegate: subscription ID =", id)
+        // print(userInfo)
+        completionHandler(.newData)
+
+        runAfter(seconds: 1) {
+            Task {
+                do {
+                    try await CloudKitViewModel.shared.retrieveFruits()
+                    print("AppDelegate: retrieved fruits")
+                } catch {
+                    print("AppDelegate: error retrieving fruits; \(error)")
+                }
+            }
         }
     }
 
@@ -56,10 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        // Add CloudKit subscriptions here.
-        let cloudKit = CloudKit(
-            containerId: "iCloud.com.objectcomputing.swiftui-cloudkit-core-data"
-        )
+        let cloudKit = CloudKit(containerId: containerId)
         Task {
             do {
                 try await cloudKit.subscribe(recordType: "Fruits")

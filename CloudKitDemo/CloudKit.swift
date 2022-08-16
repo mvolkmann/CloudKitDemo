@@ -87,13 +87,17 @@ struct CloudKit {
                 options: .firesOnRecordCreation
             )
 
+            /* THIS DOES NOT WORK!!!
             let info = CKSubscription.NotificationInfo()
             info.title = "New fruit added"
             info.alertBody = "Open the app to see it."
             info.soundName = "default"
             subscription.notificationInfo = info
+            */
 
-            // THIS DOES NOT WORK!!!
+            let info = CKSubscription.NotificationInfo()
+            info.shouldSendContentAvailable = true
+            subscription.notificationInfo = info
 
             database.save(subscription) { subscription, error in
                 if let error = error {
