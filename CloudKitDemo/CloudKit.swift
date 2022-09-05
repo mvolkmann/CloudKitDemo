@@ -89,49 +89,6 @@ struct CloudKit {
         )
     }
 
-    private func runOperation<T: CloudKitable>(
-        _ operation: CKQueryOperation
-    ) async throws -> [T] {
-        typealias Cont = CheckedContinuation<[T], Error>
-        // TODO: Why does the compiler give the following message for this line?
-        // "Type of expression is ambiguous without more context"
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            var objects: [T] = []
-
-            operation.recordMatchedBlock = { _, result in
-                switch result {
-                case let .success(record):
-                    objects.append(T(record: record)!)
-                case let .failure(error):
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            operation.queryResultBlock = { result, error in
-                switch result {
-                case let .success(cursor):
-                    if let cursor = cursor {
-                        // Make a recursive call to get more results.
-                        let newOperation = CKQueryOperation(cursor: cursor)
-                        Task {
-                            let moreObjects: [T] =
-                                try await runOperation(newOperation)
-                            objects.append(contentsOf: moreObjects)
-                            continuation.resume(returning: objects)
-                        }
-                    } else {
-                        continuation.resume(returning: objects)
-                    }
-                case let .failure(error):
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            database.add(operation)
-        // } as! [theType.self]
-        }
-    }
-
     func statusText() async throws -> String {
         switch try await container.accountStatus() {
         case .available:
@@ -199,9 +156,32 @@ struct CloudKit {
     ) async throws -> [T] {
         let query = CKQuery(recordType: recordType, predicate: predicate)
         query.sortDescriptors = sortDescriptors
-        let operation = CKQueryOperation(query: query)
-        let objects: [T] = try await runOperation(operation)
-        return objects
+        let (results, cursor) = try await database.records(
+            matching: query,
+            resultsLimit: resultsLimit
+        )
+
+        // Gets array of records, removing nils from failed calls to "get".
+        let records = results.compactMap { _, result in try? result.get() }
+
+        let objects = records.map { record in T(record: record)! }
+        guard let cursor = cursor else { return objects }
+        return try await retrieveMore(cursor, objects)
+    }
+
+    private func retrieveMore<T: CloudKitable>(
+        _ cursor: Cursor, _ previousObjects: [T]
+    ) async throws -> [T] {
+        let (results, cursor) =
+            try await database.records(continuingMatchFrom: cursor)
+
+        // Gets array of records, removing nils from failed calls to "get".
+        let records = results.compactMap { _, result in try? result.get() }
+
+        let objects = records.map { record in T(record: record)! }
+        let newObjects = previousObjects + objects
+        guard let cursor = cursor else { return newObjects }
+        return try await retrieveMore(cursor, newObjects)
     }
 
     // "U" in CRUD.
