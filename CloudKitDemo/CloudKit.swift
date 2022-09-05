@@ -93,6 +93,8 @@ struct CloudKit {
         _ operation: CKQueryOperation
     ) async throws -> [T] {
         typealias Cont = CheckedContinuation<[T], Error>
+        // TODO: Why does the compiler give the following message for this line?
+        // "Type of expression is ambiguous without more context"
         try await withCheckedThrowingContinuation { (continuation: Cont) in
             var objects: [T] = []
 
