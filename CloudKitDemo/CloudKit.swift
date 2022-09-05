@@ -56,86 +56,39 @@ struct CloudKit {
     }
 
     func requestNotifications() async throws {
-        typealias Cont = CheckedContinuation<Void, Error>
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            let center = UNUserNotificationCenter.current()
-            let options: UNAuthorizationOptions = [.alert, .badge, .sound]
-            center.requestAuthorization(options: options) { success, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if success {
-                    DispatchQueue.main.async {
-                        UIApplication.shared.registerForRemoteNotifications()
-                        continuation.resume()
-                    }
-                } else {
-                    continuation
-                        .resume(throwing: "notification authorization failed")
-                }
-            }
+        let center = UNUserNotificationCenter.current()
+        let options: UNAuthorizationOptions = [.alert, .badge, .sound]
+        try await center.requestAuthorization(options: options)
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
         }
     }
 
     // Notifications are only delivered to real devices, not to the Simulator.
     // They are only delivered if the app is not currently in the foreground.
     func subscribeToNotifications() async throws {
-        typealias Cont = CheckedContinuation<Void, Error>
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            let predicate = NSPredicate(value: true) // all records
-            let subscription = CKQuerySubscription(
-                recordType: "Fruits",
-                predicate: predicate,
-                subscriptionID: "fruit_added",
-                options: .firesOnRecordCreation
-            )
+        let predicate = NSPredicate(value: true) // all records
+        let subscription = CKQuerySubscription(
+            recordType: "Fruits",
+            predicate: predicate,
+            subscriptionID: "fruit_added",
+            options: .firesOnRecordCreation
+        )
 
-            /* THIS DOES NOT WORK!!!
-             let info = CKSubscription.NotificationInfo()
-             info.title = "New fruit added"
-             info.alertBody = "Open the app to see it."
-             info.soundName = "default"
-             subscription.notificationInfo = info
-             */
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true
+        subscription.notificationInfo = info
 
-            let info = CKSubscription.NotificationInfo()
-            info.shouldSendContentAvailable = true
-            subscription.notificationInfo = info
-
-            database.save(subscription) { _, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
+        try await database.save(subscription)
     }
 
-    func requestPermission() async throws -> CKContainer
-        .ApplicationPermissionStatus {
-        try await withCheckedThrowingContinuation { continuation in
-            container.requestApplicationPermission(
-                [.userDiscoverability]
-            ) { status, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: status)
-                }
-            }
-        }
+    func requestPermission() async throws
+    -> CKContainer.ApplicationPermissionStatus {
+        try await container.applicationPermissionStatus(for: [.userDiscoverability])
     }
 
-    func status() async throws -> CKAccountStatus {
-        try await withCheckedThrowingContinuation { continuation in
-            container.accountStatus { status, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: status)
-                }
-            }
-        }
+    private func status() async throws -> CKAccountStatus {
+        try await container.accountStatus()
     }
 
     func statusText() async throws -> String {
@@ -178,49 +131,19 @@ struct CloudKit {
     }
 
     func userIdentity() async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            Task {
-                do {
-                    let id = try await userRecordID()
-
-                    container
-                        .discoverUserIdentity(withUserRecordID: id) { identity, error in
-                            if let error = error {
-                                continuation.resume(throwing: error)
-                            } else if let components = identity?
-                                .nameComponents {
-                                let formatter = PersonNameComponentsFormatter()
-                                formatter.style = .long
-                                let identity = formatter
-                                    .string(from: components)
-                                continuation.resume(returning: identity)
-                            } else {
-                                continuation.resume(
-                                    throwing: "failed to get CloudKit user identity"
-                                )
-                            }
-                        }
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        let id = try await userRecordID()
+        let identity = try await container.userIdentity(forUserRecordID: id)
+        guard let components = identity?.nameComponents else {
+            Log.error("failed to get CloudKit user identity")
+            return ""
         }
+        let formatter = PersonNameComponentsFormatter()
+        formatter.style = .long
+        return formatter.string(from: components)
     }
 
     private func userRecordID() async throws -> CKRecord.ID {
-        try await withCheckedThrowingContinuation { continuation in
-            container.fetchUserRecordID { id, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let id = id {
-                    continuation.resume(returning: id)
-                } else {
-                    continuation.resume(
-                        throwing: "failed to get CloudKit user record id"
-                    )
-                }
-            }
-        }
+        try await container.userRecordID()
     }
 
     // MARK: - CRUD Methods
