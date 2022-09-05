@@ -59,9 +59,7 @@ struct CloudKit {
         let center = UNUserNotificationCenter.current()
         let options: UNAuthorizationOptions = [.alert, .badge, .sound]
         try await center.requestAuthorization(options: options)
-        DispatchQueue.main.async {
-            UIApplication.shared.registerForRemoteNotifications()
-        }
+        await UIApplication.shared.registerForRemoteNotifications()
     }
 
     // Notifications are only delivered to real devices, not to the Simulator.
@@ -84,15 +82,13 @@ struct CloudKit {
 
     func requestPermission() async throws
     -> CKContainer.ApplicationPermissionStatus {
-        try await container.applicationPermissionStatus(for: [.userDiscoverability])
-    }
-
-    private func status() async throws -> CKAccountStatus {
-        try await container.accountStatus()
+        try await container.applicationPermissionStatus(
+            for: [.userDiscoverability]
+        )
     }
 
     func statusText() async throws -> String {
-        switch try await status() {
+        switch try await container.accountStatus() {
         case .available:
             return "available"
         case .couldNotDetermine:
@@ -131,7 +127,7 @@ struct CloudKit {
     }
 
     func userIdentity() async throws -> String {
-        let id = try await userRecordID()
+        let id = try await container.userRecordID()
         let identity = try await container.userIdentity(forUserRecordID: id)
         guard let components = identity?.nameComponents else {
             Log.error("failed to get CloudKit user identity")
@@ -140,10 +136,6 @@ struct CloudKit {
         let formatter = PersonNameComponentsFormatter()
         formatter.style = .long
         return formatter.string(from: components)
-    }
-
-    private func userRecordID() async throws -> CKRecord.ID {
-        try await container.userRecordID()
     }
 
     // MARK: - CRUD Methods
