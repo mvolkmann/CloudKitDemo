@@ -93,7 +93,7 @@ struct CloudKit {
         _ operation: CKQueryOperation
     ) async throws -> [T] {
         typealias Cont = CheckedContinuation<[T], Error>
-        let result: [T] = try await withCheckedThrowingContinuation { (continuation: Cont) in
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             var objects: [T] = []
 
             operation.recordMatchedBlock = { _, result in
@@ -128,8 +128,6 @@ struct CloudKit {
             database.add(operation)
         // } as! [theType.self]
         }
-
-        return result
     }
 
     func statusText() async throws -> String {
