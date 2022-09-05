@@ -126,19 +126,6 @@ struct CloudKit {
         }
     }
 
-    private func save(record: CKRecord) async throws {
-        typealias Cont = CheckedContinuation<Void, Error>
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            database.save(record) { _, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
-    }
-
     func status() async throws -> CKAccountStatus {
         try await withCheckedThrowingContinuation { continuation in
             container.accountStatus { status, error in
@@ -173,33 +160,21 @@ struct CloudKit {
     // and checking "Remote notifications".
     // Supposedly subscriptions do not work in the Simulator.
     func subscribe(recordType: CKRecord.RecordType) async throws {
-        typealias Cont = CheckedContinuation<Void, Error>
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            let subscription = CKQuerySubscription(
-                recordType: recordType,
-                predicate: NSPredicate(value: true), // all records
-                options: [
-                    .firesOnRecordCreation,
-                    .firesOnRecordDeletion,
-                    .firesOnRecordUpdate
-                ]
-            )
+        let subscription = CKQuerySubscription(
+            recordType: recordType,
+            predicate: NSPredicate(value: true), // all records
+            options: [
+                .firesOnRecordCreation,
+                .firesOnRecordDeletion,
+                .firesOnRecordUpdate
+            ]
+        )
 
-            let info = CKSubscription.NotificationInfo()
-            info.shouldSendContentAvailable = true
-            info.alertBody = "" // if this isn't set, pushes aren't always sent
-            subscription.notificationInfo = info
-
-            database.save(subscription) { subscription, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if subscription != nil {
-                    continuation.resume()
-                } else {
-                    continuation.resume(throwing: "no subscription created")
-                }
-            }
-        }
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true
+        info.alertBody = "" // if this isn't set, pushes aren't always sent
+        subscription.notificationInfo = info
+        try await database.save(subscription)
     }
 
     func userIdentity() async throws -> String {
@@ -252,7 +227,7 @@ struct CloudKit {
 
     // "C" in CRUD.
     func create<T: CloudKitable>(item: T) async throws {
-        try await save(record: item.record)
+        try await database.save(item.record)
     }
 
     // "R" in CRUD.
@@ -288,7 +263,7 @@ struct CloudKit {
 
     // "U" in CRUD.
     func update<T: CloudKitable>(item: T) async throws {
-        try await save(record: item.record)
+        try await database.save(item.record)
     }
 
     // "D" in CRUD.
