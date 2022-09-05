@@ -161,11 +161,16 @@ struct CloudKit {
             resultsLimit: resultsLimit
         )
 
-        // Get array of records, removing nils from failed calls to "get".
-        let records = results.compactMap { _, result in try? result.get() }
+        var objects: [T] = []
 
-        var objects = records.map { record in T(record: record)! }
+        for (_, result) in results {
+            if let record = try? result.get() {
+                objects.append(T(record:record)!)
+            }
+        }
+
         try await retrieveMore(cursor, &objects)
+
         return objects
     }
 
@@ -177,10 +182,11 @@ struct CloudKit {
         let (results, newCursor) =
             try await database.records(continuingMatchFrom: cursor)
 
-        // Get array of records, removing nils from failed calls to "get".
-        let records = results.compactMap { _, result in try? result.get() }
-        let newObjects = records.map { record in T(record: record)! }
-        objects.append(contentsOf: newObjects)
+        for (_, result) in results {
+            if let record = try? result.get() {
+                objects.append(T(record:record)!)
+            }
+        }
 
         // Recursive call.
         try await retrieveMore(newCursor, &objects)
