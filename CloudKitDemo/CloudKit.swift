@@ -165,13 +165,14 @@ struct CloudKit {
         let records = results.compactMap { _, result in try? result.get() }
 
         var objects = records.map { record in T(record: record)! }
-        return try await retrieveMore(cursor, &objects)
+        try await retrieveMore(cursor, &objects)
+        return objects
     }
 
     private func retrieveMore<T: CloudKitable>(
         _ cursor: Cursor?, _ objects: inout [T]
-    ) async throws -> [T] {
-        guard let cursor = cursor else { return objects }
+    ) async throws {
+        guard let cursor = cursor else { return }
 
         let (results, newCursor) =
             try await database.records(continuingMatchFrom: cursor)
@@ -182,7 +183,7 @@ struct CloudKit {
         objects.append(contentsOf: newObjects)
 
         // Recursive call.
-        return try await retrieveMore(newCursor, &objects)
+        try await retrieveMore(newCursor, &objects)
     }
 
     // "U" in CRUD.
