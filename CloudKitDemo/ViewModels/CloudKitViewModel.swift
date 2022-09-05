@@ -82,7 +82,8 @@ class CloudKitViewModel: ObservableObject {
     func retrieveFruits() async throws {
         let fruits = try await cloudKit.retrieve(
             recordType: "Fruits",
-            sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
+            sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)],
+            resultsLimit: 2 // TODO: ONLY HERE TO TEST USED OF CURSORS!
         ) as [Fruit]
         DispatchQueue.main.async { self.fruits = fruits }
     }

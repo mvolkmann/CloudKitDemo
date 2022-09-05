@@ -16,6 +16,8 @@ protocol CloudKitable {
 }
 
 struct CloudKit {
+    typealias Cursor = CKQueryOperation.Cursor
+
     // MARK: - Initializer
 
     init(containerId: String, usePublic: Bool = false) {
@@ -87,6 +89,49 @@ struct CloudKit {
         )
     }
 
+    private func runOperation<T: CloudKitable>(
+        _ operation: CKQueryOperation
+    ) async throws -> [T] {
+        typealias Cont = CheckedContinuation<[T], Error>
+        let result: [T] = try await withCheckedThrowingContinuation { (continuation: Cont) in
+            var objects: [T] = []
+
+            operation.recordMatchedBlock = { _, result in
+                switch result {
+                case let .success(record):
+                    objects.append(T(record: record)!)
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            operation.queryResultBlock = { result, error in
+                switch result {
+                case let .success(cursor):
+                    if let cursor = cursor {
+                        // Make a recursive call to get more results.
+                        let newOperation = CKQueryOperation(cursor: cursor)
+                        Task {
+                            let moreObjects: [T] =
+                                try await runOperation(newOperation)
+                            objects.append(contentsOf: moreObjects)
+                            continuation.resume(returning: objects)
+                        }
+                    } else {
+                        continuation.resume(returning: objects)
+                    }
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            database.add(operation)
+        // } as! [theType.self]
+        }
+
+        return result
+    }
+
     func statusText() async throws -> String {
         switch try await container.accountStatus() {
         case .available:
@@ -154,26 +199,9 @@ struct CloudKit {
     ) async throws -> [T] {
         let query = CKQuery(recordType: recordType, predicate: predicate)
         query.sortDescriptors = sortDescriptors
-
-        // The 2nd tuple element is the cursor
-        // which isn't being used here.
-        let (results, _) = try await database.records(
-            matching: query,
-            resultsLimit: resultsLimit
-        )
-
-        // Convert the results array into an array of T items.
-        return try results.map { item in
-            // The 1st tuple element is the record id
-            // which isn't being used here.
-            let (_, result) = item
-            switch result {
-            case let .success(record):
-                return T(record: record)!
-            case let .failure(error):
-                throw error
-            }
-        }
+        let operation = CKQueryOperation(query: query)
+        let objects: [T] = try await runOperation(operation)
+        return objects
     }
 
     // "U" in CRUD.
