@@ -36,16 +36,17 @@ struct ContentView: View {
                                 // TODO: Open a sheet that displays data in the
                                 // TODO: tapped fruit and allows it to be edited.
                                 let record = fruit.record
-                                //let name = record["name"] as? String ?? ""
-                                let name = record.value(forKey: "name") as? String ?? ""
-                                //fruit.record["name"] = name + "!"
+                                // let name = record["name"] as? String ?? ""
+                                let name = record
+                                    .value(forKey: "name") as? String ?? ""
+                                // fruit.record["name"] = name + "!"
                                 record.setValue(name + "!", forKey: "name")
                                 updateFruit(fruit: fruit)
                             }
                     }
                     .onDelete(perform: deleteFruit)
                 }
-                //.refreshable(action: refresh)
+                // .refreshable(action: refresh)
                 .refreshable { refresh() }
             }
 
@@ -81,7 +82,8 @@ struct ContentView: View {
             do {
                 try await vm.retrieveFruits()
             } catch {
-                message = "error refreshing fruits: \(error.localizedDescription)"
+                message =
+                    "error refreshing fruits: \(error.localizedDescription)"
             }
         }
     }

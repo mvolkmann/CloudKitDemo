@@ -31,8 +31,8 @@ struct CloudKit {
         container = CKContainer(identifier: containerId)
 
         database = usePublic ?
-          container.publicCloudDatabase :
-          container.privateCloudDatabase
+            container.publicCloudDatabase :
+            container.privateCloudDatabase
     }
 
     // MARK: - Properties
@@ -56,7 +56,8 @@ struct CloudKit {
     }
 
     func requestNotifications() async throws {
-        return try await withCheckedThrowingContinuation { continuation in
+        typealias Cont = CheckedContinuation<Void, Error>
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             let center = UNUserNotificationCenter.current()
             let options: UNAuthorizationOptions = [.alert, .badge, .sound]
             center.requestAuthorization(options: options) { success, error in
@@ -68,7 +69,8 @@ struct CloudKit {
                         continuation.resume()
                     }
                 } else {
-                    continuation.resume(throwing: "notification authorization failed")
+                    continuation
+                        .resume(throwing: "notification authorization failed")
                 }
             }
         }
@@ -77,7 +79,8 @@ struct CloudKit {
     // Notifications are only delivered to real devices, not to the Simulator.
     // They are only delivered if the app is not currently in the foreground.
     func subscribeToNotifications() async throws {
-        return try await withCheckedThrowingContinuation { continuation in
+        typealias Cont = CheckedContinuation<Void, Error>
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             let predicate = NSPredicate(value: true) // all records
             let subscription = CKQuerySubscription(
                 recordType: "Fruits",
@@ -87,18 +90,18 @@ struct CloudKit {
             )
 
             /* THIS DOES NOT WORK!!!
-            let info = CKSubscription.NotificationInfo()
-            info.title = "New fruit added"
-            info.alertBody = "Open the app to see it."
-            info.soundName = "default"
-            subscription.notificationInfo = info
-            */
+             let info = CKSubscription.NotificationInfo()
+             info.title = "New fruit added"
+             info.alertBody = "Open the app to see it."
+             info.soundName = "default"
+             subscription.notificationInfo = info
+             */
 
             let info = CKSubscription.NotificationInfo()
             info.shouldSendContentAvailable = true
             subscription.notificationInfo = info
 
-            database.save(subscription) { subscription, error in
+            database.save(subscription) { _, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -108,7 +111,8 @@ struct CloudKit {
         }
     }
 
-    func requestPermission() async throws -> CKContainer.ApplicationPermissionStatus {
+    func requestPermission() async throws -> CKContainer
+        .ApplicationPermissionStatus {
         try await withCheckedThrowingContinuation { continuation in
             container.requestApplicationPermission(
                 [.userDiscoverability]
@@ -123,8 +127,8 @@ struct CloudKit {
     }
 
     private func save(record: CKRecord) async throws {
-        // TODO: Why is "return" necessary on the next line?
-        return try await withCheckedThrowingContinuation { continuation in
+        typealias Cont = CheckedContinuation<Void, Error>
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             database.save(record) { _, error in
                 if let error = error {
                     continuation.resume(throwing: error)
@@ -169,7 +173,8 @@ struct CloudKit {
     // and checking "Remote notifications".
     // Supposedly subscriptions do not work in the Simulator.
     func subscribe(recordType: CKRecord.RecordType) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
+        typealias Cont = CheckedContinuation<Void, Error>
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             let subscription = CKQuerySubscription(
                 recordType: recordType,
                 predicate: NSPredicate(value: true), // all records
@@ -185,10 +190,10 @@ struct CloudKit {
             info.alertBody = "" // if this isn't set, pushes aren't always sent
             subscription.notificationInfo = info
 
-            database.save(subscription) { (subscription, error) in
+            database.save(subscription) { subscription, error in
                 if let error = error {
                     continuation.resume(throwing: error)
-                } else if let _ = subscription {
+                } else if subscription != nil {
                     continuation.resume()
                 } else {
                     continuation.resume(throwing: "no subscription created")
@@ -203,20 +208,23 @@ struct CloudKit {
                 do {
                     let id = try await userRecordID()
 
-                    container.discoverUserIdentity(withUserRecordID: id) { identity, error in
-                        if let error = error {
-                            continuation.resume(throwing: error)
-                        } else if let components = identity?.nameComponents {
-                            let formatter = PersonNameComponentsFormatter()
-                            formatter.style = .long
-                            let identity = formatter.string(from: components)
-                            continuation.resume(returning: identity)
-                        } else {
-                            continuation.resume(
-                                throwing: "failed to get CloudKit user identity"
-                            )
+                    container
+                        .discoverUserIdentity(withUserRecordID: id) { identity, error in
+                            if let error = error {
+                                continuation.resume(throwing: error)
+                            } else if let components = identity?
+                                .nameComponents {
+                                let formatter = PersonNameComponentsFormatter()
+                                formatter.style = .long
+                                let identity = formatter
+                                    .string(from: components)
+                                continuation.resume(returning: identity)
+                            } else {
+                                continuation.resume(
+                                    throwing: "failed to get CloudKit user identity"
+                                )
+                            }
                         }
-                    }
                 } catch {
                     continuation.resume(throwing: error)
                 }
@@ -243,12 +251,12 @@ struct CloudKit {
     // MARK: - CRUD Methods
 
     // "C" in CRUD.
-    func create<T:CloudKitable>(item: T) async throws {
+    func create<T: CloudKitable>(item: T) async throws {
         try await save(record: item.record)
     }
 
     // "R" in CRUD.
-    func retrieve<T:CloudKitable>(
+    func retrieve<T: CloudKitable>(
         recordType: CKRecord.RecordType,
         predicate: NSPredicate = NSPredicate(value: true), // gets all
         sortDescriptors: [NSSortDescriptor]? = nil,
@@ -270,23 +278,23 @@ struct CloudKit {
             // which isn't being used here.
             let (_, result) = item
             switch result {
-            case .success(let record):
+            case let .success(record):
                 return T(record: record)!
-            case .failure(let error):
+            case let .failure(error):
                 throw error
             }
         }
     }
 
     // "U" in CRUD.
-    func update<T:CloudKitable>(item: T) async throws {
+    func update<T: CloudKitable>(item: T) async throws {
         try await save(record: item.record)
     }
 
     // "D" in CRUD.
-    func delete<T:CloudKitable>(item: T) async throws {
-        // TODO: Why is "return" necessary on the next line?
-        return try await withCheckedThrowingContinuation { continuation in
+    func delete<T: CloudKitable>(item: T) async throws {
+        typealias Cont = CheckedContinuation<Void, Error>
+        try await withCheckedThrowingContinuation { (continuation: Cont) in
             database.delete(
                 withRecordID: item.record.recordID
             ) { _, error in

@@ -23,7 +23,9 @@ class CloudKitViewModel: ObservableObject {
                     let permission = try await cloudKit.requestPermission()
                     if permission == .granted {
                         let userIdentity = try await cloudKit.userIdentity()
-                        DispatchQueue.main.async { self.userIdentity = userIdentity }
+                        DispatchQueue.main.async {
+                            self.userIdentity = userIdentity
+                        }
 
                         try await cloudKit.requestNotifications()
                         try await cloudKit.subscribeToNotifications()
@@ -48,7 +50,7 @@ class CloudKitViewModel: ObservableObject {
 
     func addFruit(name: String) async throws {
         let record = CKRecord(recordType: "Fruits")
-        //record["name"] = name as CKRecordValue
+        // record["name"] = name as CKRecordValue
         record.setValue(name as CKRecordValue, forKey: "name")
         // Also see record.setValuesForKeys([
         //    "name": name, "anotherKey": anotherValue, ...
@@ -90,7 +92,7 @@ class CloudKitViewModel: ObservableObject {
 
         // Update the corresponding published fruit object.
         let id = fruit.record.recordID
-        let index = fruits.firstIndex(where: { f in f.record.recordID == id })
+        let index = fruits.firstIndex { fruit in fruit.record.recordID == id }
         if let index = index {
             // Update the published fruit object.
             DispatchQueue.main.async { [weak self] in

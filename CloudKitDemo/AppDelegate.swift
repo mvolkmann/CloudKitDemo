@@ -3,22 +3,25 @@ import UIKit
 
 // TODO: Do you need this?
 // To use this, register it in the main .swift file.
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-
+class AppDelegate: UIResponder, UIApplicationDelegate,
+    UNUserNotificationCenterDelegate {
+    
     func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+        _: UIApplication,
+        didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.requestAuthorization(
             options: [.alert, .badge, .sound],
-            completionHandler: { authorized, error in
+            completionHandler: { authorized, _ in
                 DispatchQueue.main.async {
                     if authorized {
                         UIApplication.shared.registerForRemoteNotifications()
                     } else {
-                        print("AppDelegate: not authorized for remote notifications")
+                        print(
+                            "AppDelegate: not authorized for remote notifications"
+                        )
                     }
                 }
             }
@@ -28,26 +31,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func application(
-        _ application: UIApplication,
+        _: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+        fetchCompletionHandler completionHandler: @escaping (
+            UIBackgroundFetchResult
+        )
+            -> Void
     ) {
         completionHandler(.newData)
 
         // Determine the operation type.
         // print(userInfo)
-        let ck = userInfo["ck"] as! [AnyHashable: Any]
-        let qry = ck["qry"] as! [AnyHashable: Any]
-        let fo = qry["fo"] as! Int
+        // swiftlint:disable force_cast
+        let cloudkit = userInfo["ck"] as! [AnyHashable: Any]
+        let query = cloudkit["qry"] as! [AnyHashable: Any]
+        let operationType = query["fo"] as! Int
 
-        // fo is an integer that indicates the operation type.
+        // operationType is an integer that indicates the operation type.
         // It is is 1 for create, 2 for update, and 3 for delete
         // If a record has been updated or deleted,
         // we do not need to wait to retrieve new fruits.
         // However, if a record has been added then we do need to wait.
         // Waiting one second seems to work, but is that reliable?
         var seconds = 0
-        if fo == 1 { seconds = 1 }
+        if operationType == 1 { seconds = 1 }
 
         runAfter(seconds: seconds) {
             Task {
@@ -61,8 +68,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func application(
-        _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+        _: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken _: Data
     ) {
         let cloudKit = CloudKit(containerId: containerId)
         Task {

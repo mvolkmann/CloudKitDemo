@@ -1,7 +1,6 @@
 import CloudKit
 
 struct Fruit: CloudKitable, Hashable {
-    //init?(record: CKRecord) {
     init(record: CKRecord) {
         self.record = record
     }
@@ -9,7 +8,7 @@ struct Fruit: CloudKitable, Hashable {
     var record: CKRecord
 
     var name: String {
-        //record["name"] as? String ?? ""
+        // record["name"] as? String ?? ""
         record.value(forKey: "name") as? String ?? ""
     }
 }
