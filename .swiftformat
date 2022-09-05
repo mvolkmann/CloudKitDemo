@@ -1,0 +1,8 @@
+--hexgrouping 2,2
+--indent 4
+--maxwidth 80
+--wraparguments before-first
+--wrapcollections before-first
+--wrapconditions after-first
+--wrapparameters before-first
+--disable trailingCommas,wrapMultilineStatementBraces

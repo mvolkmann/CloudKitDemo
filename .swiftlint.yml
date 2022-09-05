@@ -1,0 +1,24 @@
+disabled_rules:
+  - todo
+
+excluded:
+  - EmpowerMeResident/OLOidc.xcodeproj // not working
+
+identifier_name:
+  min_length:
+    error: 3
+  excluded:
+    - id
+    - dx
+    - dy
+    - mL
+    - ms
+    - vm
+
+line_length:
+  warning: 100
+  error: 120
+  ignores_urls: true
+
+opt_in_rules:
+  - closure_end_indentation

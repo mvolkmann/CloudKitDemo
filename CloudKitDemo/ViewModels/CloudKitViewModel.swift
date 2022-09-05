@@ -35,7 +35,7 @@ class CloudKitViewModel: ObservableObject {
                     }
                 }
             } catch {
-                print("CloudKitViewModel: error = \(error)")
+                Log.error(error)
             }
         }
     }

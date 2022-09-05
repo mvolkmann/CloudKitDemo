@@ -19,9 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
                     if authorized {
                         UIApplication.shared.registerForRemoteNotifications()
                     } else {
-                        print(
-                            "AppDelegate: not authorized for remote notifications"
-                        )
+                        Log.info("not authorized for remote notifications")
                     }
                 }
             }
@@ -41,7 +39,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
         completionHandler(.newData)
 
         // Determine the operation type.
-        // print(userInfo)
+        // Log.info(userInfo)
         // swiftlint:disable force_cast
         let cloudkit = userInfo["ck"] as! [AnyHashable: Any]
         let query = cloudkit["qry"] as! [AnyHashable: Any]
@@ -61,7 +59,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
                 do {
                     try await CloudKitViewModel.shared.retrieveFruits()
                 } catch {
-                    print("AppDelegate: error retrieving fruits; \(error)")
+                    Log.error("error retrieving fruits: \(error)")
                 }
             }
         }
@@ -76,7 +74,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
             do {
                 try await cloudKit.subscribe(recordType: "Fruits")
             } catch {
-                print("AppDelegate: subscribe error =", error)
+                Log.error("subscribe error: \(error)")
             }
         }
     }
