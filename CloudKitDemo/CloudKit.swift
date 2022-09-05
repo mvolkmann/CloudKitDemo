@@ -164,24 +164,24 @@ struct CloudKit {
         // Gets array of records, removing nils from failed calls to "get".
         let records = results.compactMap { _, result in try? result.get() }
 
-        let objects = records.map { record in T(record: record)! }
+        var objects = records.map { record in T(record: record)! }
         guard let cursor = cursor else { return objects }
-        return try await retrieveMore(cursor, objects)
+        return try await retrieveMore(cursor, &objects)
     }
 
     private func retrieveMore<T: CloudKitable>(
-        _ cursor: Cursor, _ previousObjects: [T]
+        _ cursor: Cursor, _ objects: inout [T]
     ) async throws -> [T] {
         let (results, cursor) =
             try await database.records(continuingMatchFrom: cursor)
 
         // Gets array of records, removing nils from failed calls to "get".
         let records = results.compactMap { _, result in try? result.get() }
-
-        let objects = records.map { record in T(record: record)! }
-        let newObjects = previousObjects + objects
-        guard let cursor = cursor else { return newObjects }
-        return try await retrieveMore(cursor, newObjects)
+        let newObjects = records.map { record in T(record: record)! }
+        objects.append(contentsOf: newObjects)
+        guard let cursor = cursor else { return objects }
+        // Recursive call.
+        return try await retrieveMore(cursor, &objects)
     }
 
     // "U" in CRUD.
