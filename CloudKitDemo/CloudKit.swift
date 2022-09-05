@@ -268,17 +268,6 @@ struct CloudKit {
 
     // "D" in CRUD.
     func delete<T: CloudKitable>(item: T) async throws {
-        typealias Cont = CheckedContinuation<Void, Error>
-        try await withCheckedThrowingContinuation { (continuation: Cont) in
-            database.delete(
-                withRecordID: item.record.recordID
-            ) { _, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
+        try await database.deleteRecord(withID: item.record.recordID)
     }
 }
