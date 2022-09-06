@@ -164,9 +164,8 @@ struct CloudKit {
         var objects: [T] = []
 
         for (_, result) in results {
-            if let record = try? result.get() {
-                objects.append(T(record:record)!)
-            }
+            let record = try result.get()
+            objects.append(T(record:record)!)
         }
 
         try await retrieveMore(cursor, &objects)
@@ -183,9 +182,8 @@ struct CloudKit {
             try await database.records(continuingMatchFrom: cursor)
 
         for (_, result) in results {
-            if let record = try? result.get() {
-                objects.append(T(record:record)!)
-            }
+            let record = try result.get()
+            objects.append(T(record:record)!)
         }
 
         // Recursive call.
